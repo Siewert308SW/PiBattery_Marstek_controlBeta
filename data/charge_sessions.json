@@ -1,0 +1,27 @@
+[
+    {
+        "charged": 15.135,
+        "discharged": 11.684,
+        "loss": 0.2280145
+    },
+    {
+        "charged": 8.914,
+        "discharged": 6.927,
+        "loss": 0.2229078
+    },
+    {
+        "charged": 9.021,
+        "discharged": 7.111,
+        "loss": 0.2117282
+    },
+    {
+        "charged": 28.017,
+        "discharged": 21.301,
+        "loss": 0.2397116
+    },
+    {
+        "charged": 14.429,
+        "discharged": 11.199,
+        "loss": 0.2238547
+    }
+]

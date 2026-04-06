@@ -1,0 +1,20 @@
+{
+    "marstek_Modus": "Ready",
+    "pauseCharging": false,
+    "forceChargeMode": false,
+    "charger_pending_switch": false,
+    "keepChargersOff": true,
+    "faseProtect": false,
+    "battery_allowed": true,
+    "charge_session": {
+        "chargeStart": 2431.746,
+        "chargeCalibrated": 2424.066,
+        "dischargeStart": 1960
+    },
+    "charging_loss": {
+        "chargeStart": 2431.746,
+        "dischargeStart": 1960
+    },
+    "charger_loss_dynamic": 0.22524337035732608,
+    "oldBaseload": 627
+}
