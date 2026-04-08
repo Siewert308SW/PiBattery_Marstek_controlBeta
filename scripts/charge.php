@@ -78,6 +78,7 @@
 	if (!$isManualRun && (($vars['pauseCharging'] ?? true) !== false) && $batteryPct <= $chargerPausePct) { //$pvAvInputVoltage <= $batteryVoltTrigger && 
 		$pauseCharging = false;
 		$vars['pauseCharging'] = $pauseCharging;
+		$varsChanged = true;
 	}
 
 // = -------------------------------------------------	

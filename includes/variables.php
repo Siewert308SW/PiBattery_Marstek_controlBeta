@@ -160,7 +160,7 @@
 	$chargeLossCalculation 	= $vars['charge_loss_calculation'] ?? false;
 	$pendingCharging		= $vars['charger_pending_switch'] ?? false;
 	$battery_calibrated		= $vars['battery_calibrated'] ?? false;
-	$bmsWakeActive  		= $vars['bms_wake_active'] ?? false;
+	$bmsWakeActive  		= $vars['bmsWakeActive'] ?? false;
 	$battery_empty			= $vars['battery_empty'] ?? false;
 	$battery_allowed		= $vars['battery_allowed'] ?? false;
 	

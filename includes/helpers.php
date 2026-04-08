@@ -24,8 +24,8 @@
 		}
 
 // === piBattery discharged
-		if ($marstekBatSoc > 16 && $marstekBatMode == 'Passive' && $marstek_BatModus != 'Empty' && isset($vars['battery_empty'])){
-			$vars['marstek_Modus'] = 'Empty';
+		if ($marstekBatSoc > 16 && $marstekBatMode == 'Passive' && $marstek_BatModus != 'EmptyPi' && isset($vars['battery_empty'])){
+			$vars['marstek_Modus'] = 'EmptyPi';
 			$varsChanged = true;	
 		}
 		
@@ -36,21 +36,27 @@
 		}
 		
 // === Marstek AUTO mode
-		if ($marstekBatMode != 'Auto' && $marstek_BatModus == 'Empty'){
+		if ($marstekBatMode != 'Auto' && $marstek_BatModus == 'Empty' && $hwChargerUsage == 0 && $hwInvReturn == 0 && $hwSolarReturn <= -500){
 			setMarstekMode('auto');
-			$vars['$battery_allowed'] = false;
+			$vars['battery_allowed'] = false;
 			$varsChanged = true;
 		} 
 
 // === Marstek AUTO mode
+		if ($marstekBatMode != 'Auto' && $marstek_BatModus == 'EmptyPi' && $hwSolarReturn == 0){
+			setMarstekMode('auto');
+			$vars['battery_allowed'] = false;
+			$varsChanged = true;
+		}
+		
+// === Marstek AUTO mode
 		if ($marstekBatMode != 'Passive' && $marstek_BatModus == 'Charged'){
 			setMarstekMode('stop');
-			$vars['$battery_allowed'] = true;
+			$vars['battery_allowed'] = true;
 			$varsChanged = true;
 		} 
 		
 	}
-
 	
 // -------------------------------------------------
 // Reset $vars['battery_empty'] or $vars['battery_empty_volt']
