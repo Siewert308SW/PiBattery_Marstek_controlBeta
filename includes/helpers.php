@@ -7,44 +7,50 @@
 //
 
 // -------------------------------------------------
-// Marstek Set Mode
+// Marstek Set Mode $vars['$battery_allowed'] = true;  && $marstekBatState == 'idle'
 // -------------------------------------------------
-
-// === Marstek fully charged
-	if ($runMarstek && !$isManualRun && $marstekBatSoc >= 100 && $marstekBatMode == 'Auto' && $marstekBatState == 'idle'){
-		//if ($marstek_Modus != 'Ready' || $marstekBatMode == 'Auto') {
-			setMarstekMode('stop');
-			$vars['marstek_Modus'] = 'Ready';
+	if ($runMarstek && !$isManualRun){
+		
+// === Marstek charged and ready
+		if ($marstekBatSoc == 100 && $marstekBatMode == 'Auto' && $marstek_BatModus != 'Charged'){
+			$vars['marstek_Modus'] = 'Charged';
 			$varsChanged = true;
-		//}
-	}
-// === Marstek discharged during evening/nighttime
-	if ($runMarstek && !$isManualRun && $marstekBatSoc <= 16 && $marstekBatMode == 'Passive' && $marstek_BatModus != 'Empty' && $marstekBatState == 'idle'){
-			setMarstekMode('stop');
+		}
+	
+// === Marstek discharged
+		if ($marstekBatSoc <= 16 && $marstekBatMode == 'Passive' && $marstek_BatModus != 'Empty'){
 			$vars['marstek_Modus'] = 'Empty';
-			$varsChanged = true;
-	}
+			$varsChanged = true;	
+		}
 
 // === piBattery discharged
-	if ($runMarstek && !$isManualRun && $marstekBatSoc > 16 && $marstekBatSoc < 90 && $marstekBatMode == 'Passive' && $marstek_BatModus != 'EmptyPi' && isset($vars['battery_empty']) && $hwSolarReturn == 0){
-			setMarstekMode('stop');
-			$vars['marstek_Modus'] = 'EmptyPi';
-			$varsChanged = true;
-	}
-
-// === Marstek auto chargemode
-	if ($runMarstek && !$isManualRun && $marstekBatSoc > 16 && $marstekBatSoc < 90 && $marstekBatMode == 'Passive' && $marstek_BatModus != 'Empty' && !isset($vars['battery_empty']) && $hwSolarReturn <= -300 && $keepChargersOff == true){
-			setMarstekMode('stop');
+		if ($marstekBatSoc > 16 && $marstekBatMode == 'Passive' && $marstek_BatModus != 'Empty' && isset($vars['battery_empty'])){
+			$vars['marstek_Modus'] = 'Empty';
+			$varsChanged = true;	
+		}
+		
+// === Marstek Restart
+		if ($marstekBatSoc > 16 && $marstekBatSoc < 90 && $marstekBatMode == 'Passive' && $marstek_BatModus != 'Empty' && $hwChargerUsage == 0 && $hwInvReturn == 0 && $hwSolarReturn <= -500){
 			$vars['marstek_Modus'] = 'Empty';
 			$varsChanged = true;
-	}
-	
-// === Marstek AUTO mode during daytime
-	if ($runMarstek && !$isManualRun && $marstekBatMode != 'Auto' && $marstek_BatModus == 'Empty' && $marstekBatState == 'idle' && $hwSolarReturn <= -300){
+		}
+		
+// === Marstek AUTO mode
+		if ($marstekBatMode != 'Auto' && $marstek_BatModus == 'Empty'){
 			setMarstekMode('auto');
-	} elseif ($runMarstek && !$isManualRun && $marstekBatMode != 'Auto' && $marstek_BatModus == 'EmptyPi'){
-			setMarstekMode('auto');
+			$vars['$battery_allowed'] = false;
+			$varsChanged = true;
+		} 
+
+// === Marstek AUTO mode
+		if ($marstekBatMode != 'Passive' && $marstek_BatModus == 'Charged'){
+			setMarstekMode('stop');
+			$vars['$battery_allowed'] = true;
+			$varsChanged = true;
+		} 
+		
 	}
+
 	
 // -------------------------------------------------
 // Reset $vars['battery_empty'] or $vars['battery_empty_volt']
@@ -99,7 +105,7 @@
 			$currentMarstekWh = ($marstekBatSoc / 100) * $marstekCapacityWh;
 				
 			$neededMarstekWh = $marstekCapacityWh - $currentMarstekWh;
-			$neededMarstekWhAdjusted = $neededMarstekWh / (1 - $chargerLoss);
+			$neededMarstekWhAdjusted = $neededMarstekWh / (1 - 0.15);
 			$chargeMarstekTime = $neededMarstekWhAdjusted / $hwMarstekSocket;
 			$realMarstekChargeTime = convertTime($chargeMarstekTime);
 			
@@ -147,13 +153,15 @@
 		//sleep(1);
 		UpdateDomoticzDevice($marstekSOCIDX, ''.$marstekBatSoc.'');
 		//sleep(1);
+		UpdateDomoticzDevice($marstekAvailIDX, ''.$marstekAvailable.'');
+		//sleep(1);		
 		UpdateDomoticzDevice($batteryAvailIDX, ''.$batteryAvailable.'');
 		//sleep(1);
 		UpdateDomoticzDevice($batteryVoltageIDX, ''.$pvAvInputVoltage.'');
 		//sleep(1);
-		UpdateDomoticzDevice($inputCounterIDX, ''.$hwChargersUsage.'');
+		UpdateDomoticzDevice($inputCounterIDX, ''.$hwChargerUsage.'');
 		//sleep(1);
-		UpdateDomoticzDevice($outputCounterIDX, ''.$hwInvsReturn.'');
+		UpdateDomoticzDevice($outputCounterIDX, ''.$hwInvReturn.'');
 		//sleep(1);
 		if ($hwChargersUsage > 10 && $batteryPct < 100) {
 		UpdateDomoticzDevice($batteryChargeTimeIDX, ''.$realChargeTime.'');
@@ -166,6 +174,19 @@
 		UpdateDomoticzDevice($batteryDischargeTimeIDX, ''.$realDischargeTime.'');
 		} else {
 		UpdateDomoticzDevice($batteryDischargeTimeIDX, '00:00');
+		}
+
+		if ($hwMarstekSocket > 9 && $marstekBatSoc < 100) {
+		UpdateDomoticzDevice($marstekChargeTimeIDX, ''.$realMarstekChargeTime.'');
+		
+		} else {
+		UpdateDomoticzDevice($marstekChargeTimeIDX, '00:00');
+		}
+		//sleep(1);
+		if ($hwMarstekSocket < 0 && $marstekBatSoc > 16) {
+		UpdateDomoticzDevice($marstekDischargeTimeIDX, ''.$realMarstekDischargeTime.'');
+		} else {
+		UpdateDomoticzDevice($marstekDischargeTimeIDX, '00:00');
 		}
 		
 		//sleep(1);
@@ -182,11 +203,12 @@
 	}
 
 // = -------------------------------------------------	
-// = Push data to external Domoticz
+// = Push data to external Domoticz $batteryPct, $mayDischarge
 // = -------------------------------------------------
 
-	//if ($runCharger && !$isManualRun){
-	//	sendBatteryStatusToDomoticz($batteryPct, $mayDischarge);
-	//}
+	if ($runCharger && !$isManualRun){
+	//if ($isManualRun){	
+		sendBatteryStatusToDomoticz();
+	}
 
 ?>

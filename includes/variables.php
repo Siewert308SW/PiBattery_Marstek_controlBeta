@@ -58,7 +58,8 @@
 
 // = Marstek Variables
 	$marstek_Modus 	    	= $vars['marstek_Modus'] ?? null;
-	$marstek_BatModus 	    = $vars['marstek_Modus'] ?? null;		
+	$marstek_BatModus 	    = $vars['marstek_Modus'] ?? null;
+	$marstek_Runtime 	    = $vars['marstek_Runtime'] ?? null;		
 	$marstekMode  			= $marstekvars['marstekMode'] ?? false;
 	$marstekBatMode  		= $marstekvars['marstekMode'] ?? false;
 	$marstekState 			= $marstekvars['marstekState'] ?? false;
@@ -81,6 +82,8 @@
 // = HomeWizard GET Variables
 	$hwP1Usage              = getHwData($hwP1IP);
 	$hwP1Fase               = getHwP1FaseData($hwP1IP, $fase);
+	$hwP1Fase2              = getHwP1FaseData($hwP1IP, $fase2);
+	$hwP1Fase3              = getHwP1FaseData($hwP1IP, $fase3);
 	$hwSolarReturn          = getHwData($hwKwhIP);
 	$hwInvOneReturn         = getHwData($hwEcoFlowOneIP);
 	$hwInvTwoReturn         = getHwData($hwEcoFlowTwoIP);
@@ -150,7 +153,7 @@
 	$pauseUntil       		= $vars['charger_pause_until'] ?? 0;
 	$pendingSwitch 	  		= $vars['charger_pending_switch'] ?? false;
 	$charger_pending_type 	= $vars['charger_pending_type'] ?? null;
-	$chargerLoss 			= round($vars['charger_loss_dynamic'] ?? 0.21579680628027725, 7);	
+	$chargerLoss 			= round($vars['charger_loss_dynamic'] ?? 0.22524337035732608, 7);	
 	$pauseCharging 			= $vars['pauseCharging'] ?? false;
 	$keepChargersOff 		= $vars['keepChargersOff'] ?? false;
 	$faseProtect	 		= $vars['faseProtect'] ?? false;

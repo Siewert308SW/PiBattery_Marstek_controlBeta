@@ -75,7 +75,7 @@
 	}
 
 // === End pause
-	if ((!$isManualRun && (($vars['pauseCharging'] ?? true) !== false)) && ($pvAvInputVoltage <= $batteryVoltTrigger || $batteryPct <= $chargerPausePct)) {
+	if (!$isManualRun && (($vars['pauseCharging'] ?? true) !== false) && $batteryPct <= $chargerPausePct) { //$pvAvInputVoltage <= $batteryVoltTrigger && 
 		$pauseCharging = false;
 		$vars['pauseCharging'] = $pauseCharging;
 	}
@@ -211,8 +211,8 @@
 		!$keepChargersOff &&
 		(
 			$faseProtect ||
-			//$marstekBatMode != 'Passive' ||
-			$marstek_BatModus != 'Ready' ||
+			$marstekBatMode == 'Auto' ||
+			$battery_allowed == false ||
 			$hwInvReturn != 0 ||
 			$hwSolarReturn == 0 ||
 			$pauseCharging ||
@@ -227,8 +227,8 @@
 	} elseif (
 		$keepChargersOff &&
 		!$faseProtect &&
-		//$marstekBatMode == 'Passive' &&
-		$marstek_BatModus == 'Ready' &&
+		$marstekBatMode == 'Passive' &&
+		$battery_allowed == true &&
 		$hwInvReturn == 0 &&
 		$hwSolarReturn != 0 &&
 		!$pauseCharging &&

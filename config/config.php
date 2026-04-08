@@ -29,9 +29,9 @@
 	$ecoflowOneMaxOutput   = 580;
 	$ecoflowTwoMaxOutput   = 580;
 	$marstekMaxOutput      = 800;
-	$ecoflowMinOutput       = 80;         					     // Minimum output (Watts); the inverter is allowed to deliver
-	$ecoflowOutputOffSet    = 10;           					 // Subtract this value (Watts) from the new baseload: this part is always imported from the grid to prevent injection
-	$ecoflowMaxInvTemp      = 65;           					 // Maximum internal temperature (°C); inverter stops feeding above this temperature
+	$ecoflowMinOutput      = 100;         					     // Minimum output (Watts); the inverter is allowed to deliver
+	$ecoflowOutputOffSet   = 10;           					 	 // Subtract this value (Watts) from the new baseload: this part is always imported from the grid to prevent injection
+	$ecoflowMaxInvTemp     = 65;           					 	 // Maximum internal temperature (°C); inverter stops feeding above this temperature
 	
 // = Charger variables
 	$chargerhyst            = 150;          					 // Only turn off chargers if import exceeds this many Watts (prevents flip-flopping)
@@ -47,7 +47,9 @@
 	$faseProtection         = 'yes';        				     // Value 'yes' or 'no'
 	$maxFaseWatts           = 4500;         				     // If 'yes' whats the max Watts to guard, all chargers are turned off to prevent overloading
 	$fase                   = 1; 
-
+	$fase2                  = 2; 
+	$fase3                  = 3;
+ 	
 // = BMS Voltages
 	$bmsKeepAwake           = 'yes';        				     // Value 'yes' or 'no'
 	$bmsWakeVoltOn  		= 22.0;  							 // BMS minimum voltage at which 1 charger will keep BMS awake
@@ -67,7 +69,7 @@
 	$hwMarstekIP         	= '192.168.178.100';    			 // HomeWizard Marstek socket IP address
 	$hwMarstekMaxReturn 	=  800;
 
-	$marstekIP               = '192.168.178.97';
+	$marstekIP               = '192.168.178.9';
 	$marstekPort             = 30000;
 	
 // = Chargers
@@ -91,8 +93,11 @@
 	$marstekSOCIDX 		 	= '152';
 	$batteryVoltageIDX 		= '41';
 	$batteryAvailIDX        = '68';
+	$marstekAvailIDX        = '155';
 	$batteryChargeTimeIDX   = '66';
 	$batteryDischargeTimeIDX= '67';
+	$marstekChargeTimeIDX   = '153';
+	$marstekDischargeTimeIDX= '154';
 	$inputCounterIDX 	    = '60';
 	$outputCounterIDX 	    = '58';
 	//$ecoFlowTempIDX 		= '50';
@@ -107,8 +112,11 @@
 		'batterySOCIDX'           => $baseUrl . $batterySOCIDX,
 		'marstekSOCIDX'           => $baseUrl . $marstekSOCIDX,
 		'batteryAvailIDX'         => $baseUrl . $batteryAvailIDX,
+		'marstekAvailIDX'         => $baseUrl . $marstekAvailIDX,
 	    'batteryChargeTimeIDX'    => $baseUrl . $batteryChargeTimeIDX,
 		'batteryDischargeTimeIDX' => $baseUrl . $batteryDischargeTimeIDX,
+	    'marstekChargeTimeIDX'    => $baseUrl . $marstekChargeTimeIDX,
+		'marstekDischargeTimeIDX' => $baseUrl . $marstekDischargeTimeIDX,
 		'outputCounterIDX'        => $baseUrl . $outputCounterIDX,
 		'inputCounterIDX'         => $baseUrl . $inputCounterIDX,
 		'batteryRTEIDX'           => $baseUrl . $batteryRTEIDX

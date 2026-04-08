@@ -7,13 +7,13 @@
 //																 //
 
 // = -------------------------------------------------	
-// = Active inverter setup $marstekState != 'idle'
+// = Active inverter setup $marstekState != 'idle' && $battery_allowed == true
 // = -------------------------------------------------
-	$useMarstek = ($marstekBatSoc >= 16 && $marstekBatMode == 'Passive' && $marstek_BatModus == 'Ready');
+	$useMarstek = ($marstekBatSoc > 16 && $marstekBatMode == 'Passive' && $battery_allowed == true && $hwMarstekStatus == 'On');
 	
-	$ecoflowOneMax   = ($ecoflowOneMaxOutput * 10); // 600W * 10
-	$ecoflowTwoMax   = ($ecoflowTwoMaxOutput * 10); // 600W * 10
-	$marstekMax      = ($marstekMaxOutput * 10);    // 800W * 10
+	$ecoflowOneMax   = ($ecoflowOneMaxOutput * 10);
+	$ecoflowTwoMax   = ($ecoflowTwoMaxOutput * 10);
+	$marstekMax      = ($marstekMaxOutput * 10);
 
 	$activeInverters = [
 		'eco1' => $ecoflowOneMax,
@@ -128,8 +128,11 @@
 	}
 	
 	//if ($pvAvInputVoltage >= $batteryVoltTrigger && isset($vars['battery_empty'])) {
-	if ($batteryPct >= 50 && isset($vars['battery_empty'])) {		
-		//$forceBaseloadNull = true;			
+	if (($hwChargerOneStatus == 'On' || $hwChargerTwoStatus == 'On' || $hwChargerThreeStatus == 'On' || $hwChargerFourStatus == 'On') && ($batteryPct > 30 && isset($vars['battery_empty']))) {
+	
+	//if ($batteryPct > $batteryMinimum && isset($vars['battery_empty'])) {		
+		//$forceBaseloadNull = true;
+		
 		unset($vars['battery_empty']);
 		$varsChanged = true;
 	}
@@ -181,12 +184,16 @@
 	$updateNeeded = false;
 		
 	$delta = abs($newBaseload - abs($hwInvReturn * 10));
-		
-	if ($forceBaseloadNull == false && $hwP1Usage >= 0) {
+
+	if ($forceBaseloadNull == false) {
 		$updateNeeded = ($delta > ($baseloadDelta * 10));
-	} elseif ($forceBaseloadNull == false && $hwP1Usage < 0) {
-		$updateNeeded = ($delta > (5 * 10));
 	}
+	
+	//if ($forceBaseloadNull == false && $hwP1Usage >= 0) {
+	//	$updateNeeded = ($delta > ($baseloadDelta * 10));
+	//} elseif ($forceBaseloadNull == false && $hwP1Usage < 0) {
+	//	$updateNeeded = ($delta > (10 * 10));
+	//}
 	
 // = -------------------------------------------------	
 // = Update baseload
@@ -209,15 +216,13 @@
 // === Force baseload null #failsave
 	} elseif (!$isManualRun && $forceBaseloadNull == true && $hwInvReturn != 0) {	
 
-		if ($hwInvReturn != 0) {
+		//if ($hwInvReturn != 0) {
 			$ecoflow->setDeviceFunction($ecoflowOneSerialNumber, 'WN511_SET_PERMANENT_WATTS_PACK', ['permanent_watts' => 0]);
 			sleep(3);
 			$ecoflow->setDeviceFunction($ecoflowTwoSerialNumber, 'WN511_SET_PERMANENT_WATTS_PACK', ['permanent_watts' => 0]);
-				if ($hwMarstekSocket < 0 && $marstekBatMode != 'Auto') {
-					sleep(2);
-					setMarstekReturn(0);
-				}
-		}
+			sleep(2);
+			setMarstekReturn(0);
+		//}
 			
 // === Reset baseload variable				
 		if ($oldBaseload != 0) {

@@ -245,8 +245,11 @@
 	  global $marstekSOCIDX;
 	  global $batteryVoltageIDX;
 	  global $batteryAvailIDX;
+	  global $marstekAvailIDX;
 	  global $batteryChargeTimeIDX;
 	  global $batteryDischargeTimeIDX;
+	  global $marstekChargeTimeIDX;
+	  global $marstekDischargeTimeIDX;
 	  global $inputCounterIDX;
 	  global $outputCounterIDX;
 	  global $pvCounterIDX;
@@ -257,7 +260,7 @@
 	  $reply=json_decode(file_get_contents('http://'.$domoticzIP.'/json.htm?type=command&param=udevice&idx='.$idx.'&nvalue=0&svalue='.$cmd.';0'),true);
 	  }
 	  
-	  if ($idx == $batteryChargeTimeIDX || $idx == $batteryDischargeTimeIDX || $idx == $batteryAvailIDX){
+	  if ($idx == $marstekChargeTimeIDX || $idx == $marstekDischargeTimeIDX || $idx == $batteryChargeTimeIDX || $idx == $batteryDischargeTimeIDX || $idx == $batteryAvailIDX || $idx == $marstekAvailIDX){
 	  $reply=json_decode(file_get_contents('http://'.$domoticzIP.'/json.htm?type=command&param=udevice&idx='.$idx.'&nvalue=0&svalue='.$cmd.''),true);
 	  }
 	  
@@ -266,19 +269,43 @@
 	}
 
 // = -------------------------------------------------	
-// = Send PiBattery battery status to Domoticz
+// = Send PiBattery battery status to Domoticz $batteryPct, $mayDischarge
 // = -------------------------------------------------
-	function sendBatteryStatusToDomoticz($batteryPct, $mayDischarge) {
+	function sendBatteryStatusToDomoticz() {
 		$domoticzUrl   = 'http://192.168.178.1:8080';
-		$batteryPct    = round((float)$batteryPct, 0);
-		$mayDischarge  = $mayDischarge ? 1 : 0;
+		global $batteryPct;
+		global $marstekBatSoc;
+		global $marstek_BatModus;
+		global $marstekBatMode;
+		global $marstekMaxOutput;
+		global $ecoflowOneMaxOutput;
+		global $ecoflowTwoMaxOutput;
+		
+		$totalDischargeMarstek  = 0;
+		$totalDischargePiBattery  = 0;
+		
+		//$marstek   = false;
+		//$piBattery = false;
 
+// === Calculate total injection		
+		if ($marstekBatSoc > 35) {
+			//$marstek = true;
+			$totalDischargeMarstek = $marstekMaxOutput;
+		}
+
+		if ($marstekBatMode == 'Passive' && $marstekBatSoc > 30 && $batteryPct > 30 && !isset($vars['battery_empty'])) {
+			//$piBattery = true;
+			$totalDischargePiBattery = $ecoflowOneMaxOutput + $ecoflowTwoMaxOutput;
+		}		
+
+		$mayDischarge = ($totalDischargeMarstek + $totalDischargePiBattery);
+		
 		$updates = [
-			[
-				'name'  => 'PiBattery_BatteryPct',
-				'type'  => 0, // Integer
-				'value' => (string)$batteryPct,
-			],
+			//[
+			//	'name'  => 'PiBattery_BatteryPct',
+			//	'type'  => 0, // Integer
+			//	'value' => (string)$batteryPct,
+			//],
 			[
 				'name'  => 'PiBattery_mayDischarge',
 				'type'  => 0, // Integer

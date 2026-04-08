@@ -96,7 +96,7 @@
 	if ($runMarstek == true && !$isManualRun) {
 		$scriptTimer['lastMarstekRun'] = $timeStamp;
 		writePiJson($varsTimerFile, $scriptTimer);
-		sleep(10);
+		sleep(5);
 		require_once $piBatteryPath . 'scripts/marstek.php';
 	}
 
@@ -144,7 +144,7 @@
 			printRow('Geschatte oplaadtijd '.round($marstekBatSoc,0).'% > 100%', $realMarstekChargeTime, 'u/m');
 		}
 		
-		if ($hwMarstekSocket < 0&& $marstekBatSoc > 16) {
+		if ($hwMarstekSocket < 0 && $marstekBatSoc > 16) {
 			printRow('Geschatte ontlaadtijd 16% < '.round($marstekBatSoc,0).'%', $realMarstekDischargeTime, 'u/m');
 		}
 		
