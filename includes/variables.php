@@ -194,6 +194,14 @@
 	$mayDischarge 	    	= $vars['battery_allowed'] ?? false;
 
 	$totalCapacitykWh       = ($batteryCapacitykWh + $marstekCapacitykWh);
+
+// = Determine which battery is active for injection 
+	$usePiBattery 			= !($pvAvInputVoltage < $batteryVoltMin || $batteryPct <= $batteryMinimum);
+	$useMarstek   			= ($marstekBatSoc > $marstekMinimum);
+	
+	$ecoflowOneMax   		= ($ecoflowOneMaxOutput * 10);
+	$ecoflowTwoMax   		= ($ecoflowTwoMaxOutput * 10);
+	$marstekMax      		= ($marstekMaxOutput * 10);
 	
 // = Get status for all chargers
 	foreach ($chargers as $name => &$data) {

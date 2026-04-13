@@ -269,47 +269,55 @@
 	}
 
 // = -------------------------------------------------	
-// = Send PiBattery battery status to Domoticz $batteryPct, $mayDischarge
+// = Send PiBattery/Marstek battery status to Domoticz
 // = -------------------------------------------------
 	function sendBatteryStatusToDomoticz() {
 		$domoticzUrl   = 'http://127.0.0.1:8080';
 		global $batteryPct;
 		global $marstekBatSoc;
-		global $marstek_BatModus;
-		global $marstekBatMode;
 		global $marstekMaxOutput;
 		global $ecoflowOneMaxOutput;
 		global $ecoflowTwoMaxOutput;
+		global $usePiBattery;
+		global $useMarstek;
+		global $batteryMinimum;
+		global $marstekMinimum;
 		
 		$totalDischargeMarstek  = 0;
 		$totalDischargePiBattery  = 0;
+		$dischargeAvailable = 0;
+		$totalPct = ($batteryPct + $marstekBatSoc) / 2;
 		
-		//$marstek   = false;
-		//$piBattery = false;
-
 // === Calculate total injection		
-		if ($marstekBatSoc > 35) {
-			//$marstek = true;
+		if ($marstekBatSoc > $marstekMinimum) {
 			$totalDischargeMarstek = $marstekMaxOutput;
 		}
 
-		if ($marstekBatMode == 'Passive' && $marstekBatSoc > 30 && $batteryPct > 30 && !isset($vars['battery_empty'])) {
-			//$piBattery = true;
+		if ($batteryPct > $batteryMinimum) {
 			$totalDischargePiBattery = $ecoflowOneMaxOutput + $ecoflowTwoMaxOutput;
-		}		
+		}
 
-		$mayDischarge = ($totalDischargeMarstek + $totalDischargePiBattery);
+
+		if ($usePiBattery && $useMarstek) {
+			$dischargeAvailable = ($totalDischargeMarstek + $totalDischargePiBattery);
+		} elseif ($usePiBattery && !$useMarstek) {
+			$dischargeAvailable = ($totalDischargePiBattery);			
+		} elseif (!$usePiBattery && $useMarstek) {
+			$dischargeAvailable = ($totalDischargeMarstek);			
+		} elseif (!$usePiBattery && !$useMarstek) {
+			$dischargeAvailable = 0;			
+		}
 		
 		$updates = [
-			//[
-			//	'name'  => 'PiBattery_BatteryPct',
-			//	'type'  => 0, // Integer
-			//	'value' => (string)$batteryPct,
-			//],
+			[
+				'name'  => 'PiBattery_BatteryPct',
+				'type'  => 0, // Integer
+				'value' => (string)$totalPct,
+			],
 			[
 				'name'  => 'PiBattery_mayDischarge',
 				'type'  => 0, // Integer
-				'value' => (string)$mayDischarge,
+				'value' => (string)$dischargeAvailable,
 			],
 		];
 
