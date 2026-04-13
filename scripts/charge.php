@@ -1,67 +1,17 @@
 <?php
-
-// = -------------------------------------------------
-// = Fase Protection
-// = -------------------------------------------------
-	if ($hwP1Fase >= $maxFaseWatts && !$faseProtect && $hwChargerUsage > 0 && !$isManualRun) {
-		$faseProtect = true;
-		$vars['faseProtect'] = $faseProtect;
-		$varsChanged = true;
-
-		if ($hwChargerOneStatus == 'On' || $hwChargerTwoStatus == 'On' || $hwChargerThreeStatus == 'On' || $hwChargerFourStatus == 'On') {
-			switchHwSocket('four', 'Off'); sleep(1);
-			switchHwSocket('three', 'Off'); sleep(1);
-			switchHwSocket('two', 'Off'); sleep(1);
-			switchHwSocket('one', 'Off');
-		}
-		return;
-
-	} elseif ($hwP1Fase < $maxFaseWatts && $faseProtect && $hwChargerUsage == 0 && !$isManualRun) {
-		$faseProtect = false;
-		$vars['faseProtect'] = $faseProtect;
-		$varsChanged = true;
-	}
-
-// = -------------------------------------------------
-// = Battery voltage low, keep BMS awake
-// = -------------------------------------------------
-	if ($pvAvInputVoltage < $batteryVoltMin && $hwChargerUsage == 0 && $hwInvReturn == 0 && !$bmsWakeActive && !$isManualRun) {
-
-		if ($hwChargerTwoStatus == 'Off') {
-			switchHwSocket('two', 'On');
-			sleep(5);
-		}
-
-		$bmsWakeActive = true;
-		$vars['bmsWakeActive'] = $bmsWakeActive;
-		$vars['battery_bmsWake_time'] = time();
-		$varsChanged = true;
-		return;
-
-	} elseif ($bmsWakeActive && $hoursSince_Wake_time < 0.5 && !$isManualRun && $hwChargerTwoStatus == 'On' && $hwChargerUsage > $chargerWattsIdle) {
-		return;
-
-	} elseif ($bmsWakeActive && $hoursSince_Wake_time >= 0.5 && !$isManualRun) {
-
-		if ($hwChargerTwoStatus == 'On') {
-			switchHwSocket('two', 'Off');
-			sleep(5);
-		}
-
-		$bmsWakeActive = false;
-		$vars['bmsWakeActive'] = $bmsWakeActive;
-		unset($vars['battery_bmsWake_time']);
-		$varsChanged = true;
-		return;
-	}
+//															     //
+// **************************************************************//
+//           		 PiBattery Solar Storage                     //
+//                           Charging                            //
+// **************************************************************//
+//																 //
 
 // = -------------------------------------------------	
-// = Set charging pause when battery charged 100%
+// = Set piBattery charging pause when battery charged 100%
 // = -------------------------------------------------	
 // === Set Pause
 	if (!$isManualRun && (($vars['pauseCharging'] ?? false) !== true) && $hwChargerUsage >= 0 && $hwChargerUsage <= $chargerWattsIdle && $pvAvInputVoltage >= $batteryVoltMax) {
-		$pauseCharging = true;
-		$vars['pauseCharging'] = $pauseCharging;
+		$vars['pauseCharging'] = true;
 		$varsChanged = true;
 
 		if ($hwChargerOneStatus == 'On' || $hwChargerTwoStatus == 'On' || $hwChargerThreeStatus == 'On' || $hwChargerFourStatus == 'On'){				
@@ -75,12 +25,30 @@
 	}
 
 // === End pause
-	if (!$isManualRun && (($vars['pauseCharging'] ?? true) !== false) && $batteryPct <= $chargerPausePct) { //$pvAvInputVoltage <= $batteryVoltTrigger && 
-		$pauseCharging = false;
-		$vars['pauseCharging'] = $pauseCharging;
+	if (!$isManualRun && (($vars['pauseCharging'] ?? true) !== false) && $batteryPct <= $chargerPausePct) {
+		$vars['pauseCharging'] = false;
 		$varsChanged = true;
 	}
 
+// = -------------------------------------------------	
+// = Set Marstek charging pause when battery charged 100%
+// = -------------------------------------------------	
+// === Set Pause including failsave due to buggy Marstek API
+	if (!$isManualRun && (($vars['pauseMarstekCharging'] ?? false) !== true) && $marstekBatSoc == 100 && $marstekBatMode == 'Auto' && $marstekBatState == 'idle') {
+		$vars['pauseMarstekCharging'] = true;
+		$varsChanged = true;
+
+		//setMarstekMode('stop');
+		
+		return;	
+	}
+	
+// === End pause
+	if (!$isManualRun && (($vars['pauseMarstekCharging'] ?? true) !== false) && $marstekBatSoc <= $chargerPausePct) { 
+		$vars['pauseMarstekCharging'] = false;
+		$varsChanged = true;
+	}
+	
 // = -------------------------------------------------	
 // = Batt% variable calibration
 // = -------------------------------------------------
@@ -178,11 +146,6 @@
 						$varsChanged = true;
 					}
 					
-					if (isset($vars['battery_empty_time'])) {
-						unset($vars['battery_empty_time']);
-						$varsChanged = true;
-					}
-					
 				}
 		
 			}
@@ -198,6 +161,7 @@
 				
 			$vars['battery_calibrated'] = true;
 			$vars['battery_allowed'] = true;
+			$varsChanged = true;
 		}
 
 		if (isset($vars['battery_calibrated']) && $pvAvInputVoltage < $batteryVoltMax) {
@@ -213,31 +177,31 @@
 		(
 			$faseProtect ||
 			$marstekBatMode == 'Auto' ||
-			$battery_allowed == false ||
+			$marstek_BatModus == 'Auto' ||
 			$hwInvReturn != 0 ||
-			$hwSolarReturn == 0 ||
+			$hwSolarReturn > -500 ||
 			$pauseCharging ||
+			!$pauseMarstekCharging ||
 			$battery_calibrated || 
 			$chargeLossCalculation
 		)
 	) {
-		$keepChargersOff = true;
-		$vars['keepChargersOff'] = $keepChargersOff;
+		$vars['keepChargersOff'] = true;
 		$varsChanged = true;
 
 	} elseif (
 		$keepChargersOff &&
 		!$faseProtect &&
 		$marstekBatMode == 'Passive' &&
-		$battery_allowed == true &&
+		$marstek_BatModus == 'Charged' &&
 		$hwInvReturn == 0 &&
-		$hwSolarReturn != 0 &&
+		$hwSolarReturn < -500 &&
 		!$pauseCharging &&
+		$pauseMarstekCharging &&
 		!$battery_calibrated && 
 		!$chargeLossCalculation
 	) {
-		$keepChargersOff = false;
-		$vars['keepChargersOff'] = $keepChargersOff;
+		$vars['keepChargersOff'] = false;
 		$varsChanged = true;
 	}
 
@@ -260,14 +224,6 @@
 	if (!$keepChargersOff && $P1ChargerUsage < 0) {
 		$availableSolarPower = max(0, abs($P1ChargerUsage) - $chargerhyst);
 	}
-	
-	//if ($P1ChargerUsage < 0 && !$keepChargersOff) { // Solar Surplus
-	//	$availableSolarPower = max(0, abs($P1ChargerUsage) - $chargerhyst);
-	//} elseif ($currentTotal > 0 && $P1ChargerUsage >= 0 && $hwP1Usage <= 500 && !$keepChargersOff) { // little power import
-	//	$availableSolarPower = max(0, abs($P1ChargerUsage) + 500);
-	//} else { // Heavy power import
-	//	$availableSolarPower = 0;
-	//}	
 	
 // = -------------------------------------------------
 // = Find master charger
@@ -362,15 +318,17 @@
 // = -------------------------------------------------	
 // = Check if toggling chargers is needed
 // = -------------------------------------------------
-	$isUpscaling 		= ($bestTotal > $currentTotal);
-	$isDownscaling 		= ($bestTotal < $currentTotal);	
+	$isUpscaling 		= ($bestTotal > $currentTotal && $currentTotal == 0);
+	$isDownscaling 		= ($bestTotal < $currentTotal && $currentTotal > 0);	
 	$currentPendingType = null;
 	$isMinimumCombi 	= empty($bestCombi) || $bestCombi === [$masterName];
 
-	if ($isUpscaling && $currentTotal == 0 && !empty($bestCombi)) {
-		$currentPendingType = 'upscale_from_zero';
+	//if ($isUpscaling && !empty($bestCombi)) {
+	//	$currentPendingType = 'upscale_from_zero';
 
-	} elseif ($isDownscaling && $currentTotal > 0 && $isMinimumCombi) {
+	//} else
+		
+	if ($isDownscaling && $isMinimumCombi) {
 		$currentPendingType = 'downscale_to_zero';
 	}
 		
@@ -393,7 +351,7 @@
 	}
 
 // = -------------------------------------------------	
-// = Reset pending switch if situation changed
+// = Reset pending switch if situation changed $currentPendingType !== null
 // = -------------------------------------------------
 	if ($pendingSwitch && ($vars['charger_pending_type'] ?? null) !== $currentPendingType) {
 		if ($debug == 'yes' && $isManualRun){
@@ -461,14 +419,9 @@
 	}
 	
 // = -------------------------------------------------
-// = Toggle chargers ON/OFF
+// = Toggle chargers ON/OFF $chargerToggleAllowed == true
 // = -------------------------------------------------
-	if ($chargerToggleAllowed == true && !$bmsWakeActive) {
-		
-		//if (!isset($vars['chargerLocked'])) {
-		//	$chargerLockFileVars['chargerLocked'] = true;
-		//	$lockChanged = true;
-		//}
+	if ($chargerToggleNeeded == true && !$bmsWakeActive) {
 		
 		foreach ($chargers as $name => $data) {
 			$shouldBeOn = in_array($name, $bestCombi, true);

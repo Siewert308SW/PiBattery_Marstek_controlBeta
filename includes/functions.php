@@ -272,7 +272,7 @@
 // = Send PiBattery battery status to Domoticz $batteryPct, $mayDischarge
 // = -------------------------------------------------
 	function sendBatteryStatusToDomoticz() {
-		$domoticzUrl   = 'http://192.168.178.1:8080';
+		$domoticzUrl   = 'http://127.0.0.1:8080';
 		global $batteryPct;
 		global $marstekBatSoc;
 		global $marstek_BatModus;
@@ -352,9 +352,9 @@
 // = Marstek Set Mode
 // = -------------------------------------------------
 	function setMarstekMode($action) {
-
-		$ip 		= '192.168.178.1';
-		$port 		= 30000;
+		global $marstekIP, $marstekPort;
+		$ip   = $marstekIP;
+		$port = $marstekPort;
 		$timeout 	= 3;
 
 		$sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
@@ -436,9 +436,9 @@
 // = Marstek Set Return Power
 // = -------------------------------------------------
 	function setMarstekReturn($watts) {
-
-		$ip   = "192.168.178.1";
-		$port = 30000;
+		global $marstekIP, $marstekPort;
+		$ip   = $marstekIP;
+		$port = $marstekPort;
 		$timeout = 3;
 
 		// === UDP socket
@@ -458,7 +458,7 @@
 					"mode" => "Passive",
 					"passive_cfg" => [
 						"power" => $watts,
-						"cd_time" => 900
+						"cd_time" => 600
 					]
 				]
 			]

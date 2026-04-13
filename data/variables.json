@@ -1,20 +1,22 @@
 {
-    "marstek_Modus": "Ready",
+    "marstek_Modus": "Charged",
     "pauseCharging": false,
+    "pauseMarstekCharging": false,
     "forceChargeMode": false,
     "charger_pending_switch": false,
     "keepChargersOff": true,
     "faseProtect": false,
     "battery_allowed": true,
     "charge_session": {
-        "chargeStart": 2431.746,
-        "chargeCalibrated": 2424.066,
-        "dischargeStart": 1960
+        "chargeStart": 2466.491,
+        "chargeCalibrated": 2458.811,
+        "dischargeStart": 1986.944
     },
     "charging_loss": {
-        "chargeStart": 2431.746,
-        "dischargeStart": 1960
+        "chargeStart": 2466.491,
+        "dischargeStart": 1986.942
     },
-    "charger_loss_dynamic": 0.22524337035732608,
-    "oldBaseload": 627
+    "charger_loss_dynamic": 0.22029373899035115,
+    "oldBaseload": 1960,
+    "bmsWakeActive": false
 }

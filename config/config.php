@@ -19,19 +19,20 @@
 // = Battery variables
 	$batteryVolt            = 25.6;         					 // Battery Voltage
 	$batteryAh              = 300;          					 // Total Ah of all batteries
-	$batteryMinimum         = 10;           					 // Minimum percentage to keep in the battery, wintertime will be automaticly set to 25%
+	$batteryMinimum         = 15;           					 // Minimum percentage to keep in the battery, wintertime will be automaticly set to 25%
+	$marstekMinimum         = 18;
 
 	$batteryVoltMax         = 27.0; 
 	$batteryVoltTrigger     = 25.3;
 	$batteryVoltMin         = 23.0;
 	
 // = Inverter variables
-	$ecoflowOneMaxOutput   = 580;
-	$ecoflowTwoMaxOutput   = 580;
-	$marstekMaxOutput      = 800;
-	$ecoflowMinOutput      = 100;         					     // Minimum output (Watts); the inverter is allowed to deliver
-	$ecoflowOutputOffSet   = 10;           					 	 // Subtract this value (Watts) from the new baseload: this part is always imported from the grid to prevent injection
-	$ecoflowMaxInvTemp     = 65;           					 	 // Maximum internal temperature (°C); inverter stops feeding above this temperature
+	$ecoflowOneMaxOutput   	= 580;
+	$ecoflowTwoMaxOutput   	= 580;
+	$marstekMaxOutput      	= 800;
+	$ecoflowMinOutput      	= 80;         					     // Minimum output (Watts); the inverter is allowed to deliver
+	$ecoflowOutputOffSet   	= 5;           					 	 // Subtract this value (Watts) from the new baseload: this part is always imported from the grid to prevent injection
+	$ecoflowMaxInvTemp     	= 65;           					 	 // Maximum internal temperature (°C); inverter stops feeding above this temperature
 	
 // = Charger variables
 	$chargerhyst            = 150;          					 // Only turn off chargers if import exceeds this many Watts (prevents flip-flopping)
@@ -41,7 +42,7 @@
 	$chargerPause           = 60;          					 	 // Delay in seconds before toggling chargers (prevents flip-flops), But only if realUsage is lower then 2500w
 	
 // = Baseload variables
-	$baseloadDelta			= 30;
+	$baseloadDelta			= 20;
 	
 // = Phase protection
 	$faseProtection         = 'yes';        				     // Value 'yes' or 'no'

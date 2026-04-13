@@ -64,14 +64,14 @@
 	$marstekBatMode  		= $marstekvars['marstekMode'] ?? false;
 	$marstekState 			= $marstekvars['marstekState'] ?? false;
 	$marstekBatState 		= $marstekvars['marstekState'] ?? false;
-	$marstekSoc   			= $marstekvars['marstekSoc'] ?? 0;
-	$marstekBatSoc   	    = $marstekvars['marstekSoc'] ?? 16;
+	$marstekSoc   			= $marstekvars['marstekSoc'] ?? $marstekMinimum;
+	$marstekBatSoc   	    = $marstekvars['marstekSoc'] ?? $marstekMinimum;
 	
 	$hwMarstekSocket = getHwData($hwMarstekIP);
-	if ($hwMarstekSocket >= 0 && $hwMarstekSocket <= 9) {
+	if ($hwMarstekSocket >= 0 && $hwMarstekSocket <= 10) {
 		$hwMarstekReturn = 0; 
 		$hwMarstekUsage = 0;
-	} elseif ($hwMarstekSocket > 9) {
+	} elseif ($hwMarstekSocket > 10) {
 		$hwMarstekReturn = 0; 
 		$hwMarstekUsage = $hwMarstekSocket;		
 	} elseif ($hwMarstekSocket < 0) {
@@ -155,6 +155,7 @@
 	$charger_pending_type 	= $vars['charger_pending_type'] ?? null;
 	$chargerLoss 			= round($vars['charger_loss_dynamic'] ?? 0.22524337035732608, 7);	
 	$pauseCharging 			= $vars['pauseCharging'] ?? false;
+	$pauseMarstekCharging   = $vars['pauseMarstekCharging'] ?? false;
 	$keepChargersOff 		= $vars['keepChargersOff'] ?? false;
 	$faseProtect	 		= $vars['faseProtect'] ?? false;
 	$chargeLossCalculation 	= $vars['charge_loss_calculation'] ?? false;

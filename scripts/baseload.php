@@ -7,18 +7,21 @@
 //																 //
 
 // = -------------------------------------------------	
-// = Active inverter setup $marstekState != 'idle' && $battery_allowed == true
+// = Active inverter setup
 // = -------------------------------------------------
-	$useMarstek = ($marstekBatSoc > 16 && $marstekBatMode == 'Passive' && $battery_allowed == true && $hwMarstekStatus == 'On');
+	$usePiBattery = !($pvAvInputVoltage < $batteryVoltMin || $batteryPct <= $batteryMinimum);
+	$useMarstek   = ($marstekBatSoc > $marstekMinimum);
 	
 	$ecoflowOneMax   = ($ecoflowOneMaxOutput * 10);
 	$ecoflowTwoMax   = ($ecoflowTwoMaxOutput * 10);
 	$marstekMax      = ($marstekMaxOutput * 10);
 
-	$activeInverters = [
-		'eco1' => $ecoflowOneMax,
-		'eco2' => $ecoflowTwoMax,
-	];
+	$activeInverters = [];
+
+	if ($usePiBattery) {
+		$activeInverters['eco1'] = $ecoflowOneMax;
+		$activeInverters['eco2'] = $ecoflowTwoMax;
+	}
 
 	if ($useMarstek) {
 		$activeInverters['marstek'] = $marstekMax;
@@ -34,56 +37,52 @@
 	} elseif ($hwP1Usage >= $totalMaxOutput){
 		$newBaseloadRef = round($totalMaxOutput * 10);
 	}
-
+	
 	$newBaseload = floor(($newBaseloadRef) / 10) * 10;
-
-	//debugMsg("NewBaseload: {$newBaseload}");
 
 // = -------------------------------------------------	
 // = Distribute baseload across active inverters
 // = -------------------------------------------------
 	$remainingLoad       = $newBaseload;
+	$activeCount         = count($activeInverters);
 	$invOneBaseload      = 0;
 	$invTwoBaseload      = 0;
 	$marstekBaseload     = 0;
 
-	$activeCount         = count($activeInverters);
-	$targetPerInverter   = round(($remainingLoad / $activeCount) / 10) * 10;
+	if ($activeCount > 0) {
+		$targetPerInverter = round(($remainingLoad / $activeCount) / 10) * 10;
 
-	$invOneBaseload = min($targetPerInverter, $ecoflowOneMax);
-	$invTwoBaseload = min($targetPerInverter, $ecoflowTwoMax);
+		if ($usePiBattery) {
+			$invOneBaseload = min($targetPerInverter, $ecoflowOneMax);
+			$invTwoBaseload = min($targetPerInverter, $ecoflowTwoMax);
+		}
 
-	if ($useMarstek) {
-		$marstekBaseload = min($targetPerInverter, $marstekMax);
-	}
+		if ($useMarstek) {
+			$marstekBaseload = min($targetPerInverter, $marstekMax);
+		}
 
-	$distributed   = $invOneBaseload + $invTwoBaseload + $marstekBaseload;
-	$remainingLoad -= $distributed;
+		$distributed   = $invOneBaseload + $invTwoBaseload + $marstekBaseload;
+		$remainingLoad -= $distributed;
 
 // === Distribute remainder
-	if ($remainingLoad > 0){
-		$add = min($remainingLoad, ($ecoflowOneMax - $invOneBaseload));
-		$invOneBaseload += $add;
-		$remainingLoad  -= $add;
-	}
+		if ($remainingLoad > 0 && $usePiBattery){
+			$add = min($remainingLoad, ($ecoflowOneMax - $invOneBaseload));
+			$invOneBaseload += $add;
+			$remainingLoad  -= $add;
+		}
 
-	if ($remainingLoad > 0){
-		$add = min($remainingLoad, ($ecoflowTwoMax - $invTwoBaseload));
-		$invTwoBaseload += $add;
-		$remainingLoad  -= $add;
-	}
+		if ($remainingLoad > 0 && $usePiBattery){
+			$add = min($remainingLoad, ($ecoflowTwoMax - $invTwoBaseload));
+			$invTwoBaseload += $add;
+			$remainingLoad  -= $add;
+		}
 
-	if ($remainingLoad > 0 && $useMarstek){
-		$add = min($remainingLoad, ($marstekMax - $marstekBaseload));
-		$marstekBaseload += $add;
-		$remainingLoad   -= $add;
+		if ($remainingLoad > 0 && $useMarstek){
+			$add = min($remainingLoad, ($marstekMax - $marstekBaseload));
+			$marstekBaseload += $add;
+			$remainingLoad   -= $add;
+		}
 	}
-
-	//debugMsg("InvOneBaseload: {$invOneBaseload}");
-	//debugMsg("InvTwoBaseload: {$invTwoBaseload}");
-	//debugMsg("MarstekBaseload: {$marstekBaseload}");
-	//$totaal = (($invOneBaseload + $invTwoBaseload + $marstekBaseload) / 10);
-	//debugMsg("Totale Baseload: {$totaal}");
 	
 // = -------------------------------------------------	
 // = Baseload failsaves
@@ -114,7 +113,7 @@
 	}
 	
 // === Set baseload to null when battery is empty
-	if ($pvAvInputVoltage < $batteryVoltMin || $batteryPct <= $batteryMinimum) {
+	if(!$usePiBattery && !$useMarstek){
 		$forceBaseloadNull = true;
 		if ($debug == 'yes' && $isManualRun){
 			debugMsg('Ontladen geblokkeerd: Batterij is leeg');
@@ -127,31 +126,26 @@
 			
 	}
 	
-	//if ($pvAvInputVoltage >= $batteryVoltTrigger && isset($vars['battery_empty'])) {
-	if (($hwChargerOneStatus == 'On' || $hwChargerTwoStatus == 'On' || $hwChargerThreeStatus == 'On' || $hwChargerFourStatus == 'On') && ($batteryPct > 30 && isset($vars['battery_empty']))) {
-	
-	//if ($batteryPct > $batteryMinimum && isset($vars['battery_empty'])) {		
-		//$forceBaseloadNull = true;
-		
+	if($usePiBattery && $useMarstek && isset($vars['battery_empty'])){
 		unset($vars['battery_empty']);
 		$varsChanged = true;
 	}
 		
 // Set Baseload null when inverters aren't online
-	if ($hwInvOneStatus == 'Off' || $hwInvTwoStatus == 'Off'){
+	if ($hwInvOneStatus == 'Off' || $hwInvTwoStatus == 'Off' || $hwMarstekStatus == 'Off'){
 		$forceBaseloadNull = true;
 		if ($debug == 'yes' && $isManualRun){
-			debugMsg('Ontladen geblokkeerd: Omvormers zijn offline');
+			debugMsg('Ontladen geblokkeerd: Omvormers sockets zijn uitgeschakeld');
 		}
 	}
 
 // === Set baseload to null when battery calibration is still running || isset($vars['battery_calibrated'])  || $battery_allowed == false || $batteryPct > 100.00
-		if (isset($vars['charge_loss_calculation'])) {
-			$forceBaseloadNull = true;
-			if ($debug == 'yes' && $isManualRun){
-			debugMsg('Ontladen geblokkeerd: Batterij calibratie moet worden uitgevoerd');
-			}
+	if (isset($vars['charge_loss_calculation']) || $batteryPct > 100.00) {
+		$forceBaseloadNull = true;
+		if ($debug == 'yes' && $isManualRun){
+		debugMsg('Ontladen geblokkeerd: Batterij calibratie moet worden uitgevoerd');
 		}
+	}
 		
 // === Set baseload to null when it's Winter break
 	if ($isWinter && $currentTime >= $sunriseLate && $currentTime <= $sunsetEarly) {
@@ -166,10 +160,23 @@
 	}
 
 // === Set baseload to null if marstek battery is not in Passive Mode
-	if ($marstekBatMode == 'Auto') {
+	if ($marstekBatMode == 'Auto' || $marstek_BatModus == 'Auto') {
 		$forceBaseloadNull = true;
 		debugMsg('Ontladen geblokkeerd: Marstek in AUTO Mode');
 	}
+
+// === Set Marstek in Passive Mode due to to much import
+	if ($usePiBattery && $useMarstek && $realUsage > 2500 && $hwChargerUsage == 0 && $hwMarstekReturn < -800 && $marstekBatMode == 'Auto' && $marstek_BatModus == 'Auto' && $invOneBaseload == ($ecoflowOneMaxOutput * 10) && $invTwoBaseload == ($ecoflowTwoMaxOutput * 10)) {
+		setMarstekMode('stop');
+		$vars['marstek_Modus'] = 'Charged';
+		$varsChanged = true;
+	}
+	
+	debugMsg("InvOneBaseload: {$invOneBaseload}");
+	debugMsg("InvTwoBaseload: {$invTwoBaseload}");
+	debugMsg("MarstekBaseload: {$marstekBaseload}");
+	$totaal = (($invOneBaseload + $invTwoBaseload + $marstekBaseload) / 10);
+	debugMsg("Totale Baseload: {$totaal}");
 	
 	if ($forceBaseloadNull == true) {
 		$newBaseload = 0;
@@ -177,7 +184,7 @@
 		$invTwoBaseload  = 0;
 		$marstekBaseload = 0;
 	}
-
+	
 // = -------------------------------------------------	
 // = Check if baseload needs to be updated
 // = -------------------------------------------------
@@ -189,12 +196,6 @@
 		$updateNeeded = ($delta > ($baseloadDelta * 10));
 	}
 	
-	//if ($forceBaseloadNull == false && $hwP1Usage >= 0) {
-	//	$updateNeeded = ($delta > ($baseloadDelta * 10));
-	//} elseif ($forceBaseloadNull == false && $hwP1Usage < 0) {
-	//	$updateNeeded = ($delta > (10 * 10));
-	//}
-	
 // = -------------------------------------------------	
 // = Update baseload
 // = -------------------------------------------------
@@ -204,8 +205,8 @@
 		sleep(3);
 		$ecoflow->setDeviceFunction($ecoflowTwoSerialNumber,'WN511_SET_PERMANENT_WATTS_PACK',['permanent_watts' => $invTwoBaseload]);
 		sleep(2);
-		setMarstekReturn($useMarstek ? ($marstekBaseload / 10) : 0);
-		
+		setMarstekReturn(($marstekBaseload / 10));
+	
 // === Set new baseload variable
 		if (($newBaseload / 10) != $oldBaseload) {
 			$varsChanged = true;
@@ -214,15 +215,15 @@
 
 
 // === Force baseload null #failsave
-	} elseif (!$isManualRun && $forceBaseloadNull == true && $hwInvReturn != 0) {	
+	} elseif (!$isManualRun && $forceBaseloadNull == true && $hwInvReturn < 0) {	
 
-		//if ($hwInvReturn != 0) {
-			$ecoflow->setDeviceFunction($ecoflowOneSerialNumber, 'WN511_SET_PERMANENT_WATTS_PACK', ['permanent_watts' => 0]);
-			sleep(3);
-			$ecoflow->setDeviceFunction($ecoflowTwoSerialNumber, 'WN511_SET_PERMANENT_WATTS_PACK', ['permanent_watts' => 0]);
-			sleep(2);
-			setMarstekReturn(0);
-		//}
+		$ecoflow->setDeviceFunction($ecoflowOneSerialNumber, 'WN511_SET_PERMANENT_WATTS_PACK', ['permanent_watts' => 0]);
+		sleep(3);
+		$ecoflow->setDeviceFunction($ecoflowTwoSerialNumber, 'WN511_SET_PERMANENT_WATTS_PACK', ['permanent_watts' => 0]);
+		sleep(2);
+		if($marstekBatMode != 'Auto' && $marstek_BatModus != 'Auto'){
+		setMarstekReturn(0);
+		}
 			
 // === Reset baseload variable				
 		if ($oldBaseload != 0) {
