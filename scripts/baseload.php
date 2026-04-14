@@ -9,13 +9,6 @@
 // = -------------------------------------------------	
 // = Active inverter setup
 // = -------------------------------------------------
-	$usePiBattery = !($pvAvInputVoltage < $batteryVoltMin || $batteryPct <= $batteryMinimum);
-	$useMarstek   = ($marstekBatSoc > $marstekMinimum);
-	
-	$ecoflowOneMax   = ($ecoflowOneMaxOutput * 10);
-	$ecoflowTwoMax   = ($ecoflowTwoMaxOutput * 10);
-	$marstekMax      = ($marstekMaxOutput * 10);
-
 	$activeInverters = [];
 
 	if ($usePiBattery) {
@@ -130,14 +123,6 @@
 		unset($vars['battery_empty']);
 		$varsChanged = true;
 	}
-		
-// Set Baseload null when inverters aren't online
-	if ($hwInvOneStatus == 'Off' || $hwInvTwoStatus == 'Off' || $hwMarstekStatus == 'Off'){
-		$forceBaseloadNull = true;
-		if ($debug == 'yes' && $isManualRun){
-			debugMsg('Ontladen geblokkeerd: Omvormers sockets zijn uitgeschakeld');
-		}
-	}
 
 // === Set baseload to null when battery calibration is still running || isset($vars['battery_calibrated'])  || $battery_allowed == false || $batteryPct > 100.00
 	if (isset($vars['charge_loss_calculation']) || $batteryPct > 100.00) {
@@ -154,7 +139,7 @@
 	}
 
 // === Set baseload to null if inverters have to inject lower then then can handle
-	if ($newBaseload >= 0 && $newBaseload <= ($ecoflowMinOutput * 10)) {
+	if ($newBaseload >= 0 && $newBaseload <= ($ecoflowMinOutput * 10) && $hwChargerUsage == 0) {
 		$forceBaseloadNull = true;
 		debugMsg('Ontladen geblokkeerd: Vraag is minder dan minimale ontlading');
 	}
@@ -165,18 +150,45 @@
 		debugMsg('Ontladen geblokkeerd: Marstek in AUTO Mode');
 	}
 
-// === Set Marstek in Passive Mode due to to much import
-	if ($usePiBattery && $useMarstek && $realUsage > 2500 && $hwChargerUsage == 0 && $hwMarstekReturn < -800 && $marstekBatMode == 'Auto' && $marstek_BatModus == 'Auto' && $invOneBaseload == ($ecoflowOneMaxOutput * 10) && $invTwoBaseload == ($ecoflowTwoMaxOutput * 10)) {
+// === Set Marstek in Passive Mode due to heavy import piBattery needed
+if (!$isManualRun) {
+	$needPibattery = ($hwSolarReturn < 0 && $hwP1Usage > $ecoflowOneMaxOutput && $hwChargerUsage == 0 && $hwMarstekReturn < -abs($marstekMaxOutput) && $marstekBatMode == 'Auto' && $marstek_BatModus == 'Auto' && $invOneBaseload == ($ecoflowOneMaxOutput * 10) && $invTwoBaseload == ($ecoflowTwoMaxOutput * 10));
+	//$needPibattery = true;
+	$marstekNeeded = false;
+	
+	if ($needPibattery && $usePiBattery && $useMarstek && !isset($vars['piBatteryNeededTimer'])) {
+		$scriptTimer['piBatteryNeededTimer'] = $timeStamp;
+		writePiJson($varsTimerFile, $scriptTimer);
+	}	
+
+	if ($needPibattery && $usePiBattery && $useMarstek && isset($scriptTimer['piBatteryNeededTimer']) && ($timeStamp - $scriptTimer['piBatteryNeededTimer']) >= 240) {
 		setMarstekMode('stop');
 		$vars['marstek_Modus'] = 'Charged';
+		unset($scriptTimer['piBatteryNeededTimer']);
 		$varsChanged = true;
+	} elseif (!$needPibattery && isset($scriptTimer['piBatteryNeededTimer']) && ($timeStamp - $scriptTimer['piBatteryNeededTimer']) >= 240) {
+		unset($scriptTimer['piBatteryNeededTimer']);
 	}
+}	
+	//if ($usePiBattery && $useMarstek && $realUsage > 2500 && $hwChargerUsage == 0 && $hwMarstekReturn < -800 && $marstekBatMode == 'Auto' && $marstek_BatModus == 'Auto' && $invOneBaseload == ($ecoflowOneMaxOutput * 10) && $invTwoBaseload == ($ecoflowTwoMaxOutput * 10)) {
+	//	setMarstekMode('stop');
+	//	$vars['marstek_Modus'] = 'Charged';
+	//	$varsChanged = true;
+	//}
 	
-	debugMsg("InvOneBaseload: {$invOneBaseload}");
-	debugMsg("InvTwoBaseload: {$invTwoBaseload}");
-	debugMsg("MarstekBaseload: {$marstekBaseload}");
-	$totaal = (($invOneBaseload + $invTwoBaseload + $marstekBaseload) / 10);
-	debugMsg("Totale Baseload: {$totaal}");
+	//debugMsg("InvOneBaseload: {$invOneBaseload}");
+	//debugMsg("InvTwoBaseload: {$invTwoBaseload}");
+	//debugMsg("MarstekBaseload: {$marstekBaseload}");
+	//$totaal = (($invOneBaseload + $invTwoBaseload + $marstekBaseload) / 10);
+	//debugMsg("Totale Baseload: {$totaal}");
+
+// Set Baseload null when inverters aren't online
+	if ($hwInvOneStatus == 'Off' || $hwInvTwoStatus == 'Off' || $hwMarstekStatus == 'Off'){
+		$forceBaseloadNull = true;
+		if ($debug == 'yes' && $isManualRun){
+			debugMsg('Ontladen geblokkeerd: Omvormers sockets zijn uitgeschakeld');
+		}
+	}
 	
 	if ($forceBaseloadNull == true) {
 		$newBaseload = 0;

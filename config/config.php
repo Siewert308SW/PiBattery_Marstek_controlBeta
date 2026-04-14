@@ -19,7 +19,7 @@
 // = Battery variables
 	$batteryVolt            = 25.6;         					 // Battery Voltage
 	$batteryAh              = 300;          					 // Total Ah of all batteries
-	$batteryMinimum         = 15;           					 // Minimum percentage to keep in the battery, wintertime will be automaticly set to 25%
+	$batteryMinimum         = 12;           					 // Minimum percentage to keep in the battery, wintertime will be automaticly set to 25%
 	$marstekMinimum         = 18;
 
 	$batteryVoltMax         = 27.0; 
@@ -35,7 +35,7 @@
 	$ecoflowMaxInvTemp     	= 65;           					 	 // Maximum internal temperature (°C); inverter stops feeding above this temperature
 	
 // = Charger variables
-	$chargerhyst            = 150;          					 // Only turn off chargers if import exceeds this many Watts (prevents flip-flopping)
+	$chargerhyst            = 100;          					 // Only turn off chargers if import exceeds this many Watts (prevents flip-flopping)
 	$chargerWattsIdle       = 80;          					     // Standby Watts of all chargers when the batteries are full
 	$chargerPausePct        = 90;           					 // When battery has been charged 100% till what % has it to drop before charging is allowed again
 	$chargeSessions			= 5;                                 // How many charge session to calculate charging loss 

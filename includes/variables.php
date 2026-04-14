@@ -19,7 +19,7 @@
 	$currentTime 			= date('H:i');
 	$dateNow 				= date('Y-m-d H:i:s');
 	$dateTime 				= new DateTime(''.$dateNow.'', new DateTimeZone(''.$timezone.''));
-	$isWinter 				= ($dateTime->format('n') <= 2 || $dateTime->format('n') >= 11);
+	$isWinter 				= ($dateTime->format('n') < 3 || $dateTime->format('n') >= 10);
 	
 // = Check DST time
 	$isDST = $dateTime->format("I");
@@ -196,7 +196,7 @@
 	$totalCapacitykWh       = ($batteryCapacitykWh + $marstekCapacitykWh);
 
 // = Determine which battery is active for injection 
-	$usePiBattery 			= !($pvAvInputVoltage < $batteryVoltMin || $batteryPct <= $batteryMinimum);
+	$usePiBattery 			= !($pvAvInputVoltage < $batteryVoltMin || $batteryPct <= $batteryMinimum || $isWinter);
 	$useMarstek   			= ($marstekBatSoc > $marstekMinimum);
 	
 	$ecoflowOneMax   		= ($ecoflowOneMaxOutput * 10);

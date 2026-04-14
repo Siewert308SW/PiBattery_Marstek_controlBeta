@@ -286,14 +286,14 @@
 		$totalDischargeMarstek  = 0;
 		$totalDischargePiBattery  = 0;
 		$dischargeAvailable = 0;
-		$totalPct = ($batteryPct + $marstekBatSoc) / 2;
+		$totalPct = round(($batteryPct + $marstekBatSoc) / 2, 0);
 		
 // === Calculate total injection		
-		if ($marstekBatSoc > $marstekMinimum) {
+		if ($marstekBatSoc > ($marstekMinimum * 2)) {
 			$totalDischargeMarstek = $marstekMaxOutput;
 		}
 
-		if ($batteryPct > $batteryMinimum) {
+		if ($batteryPct > ($batteryMinimum * 3)) {
 			$totalDischargePiBattery = $ecoflowOneMaxOutput + $ecoflowTwoMaxOutput;
 		}
 
@@ -588,11 +588,6 @@
 		} else {
 			$marstekSoc = $prev['marstekSoc'] ?? null;
 		}
-
-		//$batPower = null;
-		//if (isset($statusResult['bat_power']) && is_numeric($statusResult['bat_power'])) {
-		//	$batPower = (float)$statusResult['bat_power'];
-		//}
 
 		if ($hwMarstekSocket >= 0 && $hwMarstekSocket < 10) {
 			$marstekState = 'idle';
