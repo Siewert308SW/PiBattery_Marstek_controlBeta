@@ -149,32 +149,6 @@
 		$forceBaseloadNull = true;
 		debugMsg('Ontladen geblokkeerd: Marstek in AUTO Mode');
 	}
-
-// === Set Marstek in Passive Mode due to heavy import piBattery needed
-if (!$isManualRun) {
-	$needPibattery = ($hwSolarReturn < 0 && $hwP1Usage > $ecoflowOneMaxOutput && $hwChargerUsage == 0 && $hwMarstekReturn < -abs($marstekMaxOutput) && $marstekBatMode == 'Auto' && $marstek_BatModus == 'Auto' && $invOneBaseload == ($ecoflowOneMaxOutput * 10) && $invTwoBaseload == ($ecoflowTwoMaxOutput * 10));
-	//$needPibattery = true;
-	$marstekNeeded = false;
-	
-	if ($needPibattery && $usePiBattery && $useMarstek && !isset($vars['piBatteryNeededTimer'])) {
-		$scriptTimer['piBatteryNeededTimer'] = $timeStamp;
-		writePiJson($varsTimerFile, $scriptTimer);
-	}	
-
-	if ($needPibattery && $usePiBattery && $useMarstek && isset($scriptTimer['piBatteryNeededTimer']) && ($timeStamp - $scriptTimer['piBatteryNeededTimer']) >= 240) {
-		setMarstekMode('stop');
-		$vars['marstek_Modus'] = 'Charged';
-		unset($scriptTimer['piBatteryNeededTimer']);
-		$varsChanged = true;
-	} elseif (!$needPibattery && isset($scriptTimer['piBatteryNeededTimer']) && ($timeStamp - $scriptTimer['piBatteryNeededTimer']) >= 240) {
-		unset($scriptTimer['piBatteryNeededTimer']);
-	}
-}	
-	//if ($usePiBattery && $useMarstek && $realUsage > 2500 && $hwChargerUsage == 0 && $hwMarstekReturn < -800 && $marstekBatMode == 'Auto' && $marstek_BatModus == 'Auto' && $invOneBaseload == ($ecoflowOneMaxOutput * 10) && $invTwoBaseload == ($ecoflowTwoMaxOutput * 10)) {
-	//	setMarstekMode('stop');
-	//	$vars['marstek_Modus'] = 'Charged';
-	//	$varsChanged = true;
-	//}
 	
 	//debugMsg("InvOneBaseload: {$invOneBaseload}");
 	//debugMsg("InvTwoBaseload: {$invTwoBaseload}");

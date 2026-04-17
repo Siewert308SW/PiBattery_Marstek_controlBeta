@@ -7,6 +7,33 @@
 //
 
 // -------------------------------------------------
+// Marstek Set Mode Passive - piBattery needs to wakeup
+// -------------------------------------------------
+
+	if ($runBaseload || $isManualRun) {
+		$needPibattery = false;
+		$needPibattery = ($hwP1Usage > $chargerhyst && $hwSolarReturn < 0 && $hwChargerUsage == 0 && $hwMarstekReturn < -abs(750) && $marstekBatMode == 'Auto');
+		//debugMsg("needPibattery - {$needPibattery}");
+		//$needPibattery = ($hwSolarReturn < 0 && $hwChargerUsage == 0 && $hwMarstekReturn <= -abs($marstekMaxOutput) && $marstekBatMode == 'Auto' && $marstek_BatModus == 'Auto' && $invOneBaseload == ($ecoflowOneMaxOutput * 10) && $invTwoBaseload == ($ecoflowTwoMaxOutput * 10));
+		//$needPibattery = true;
+		//$marstekNeeded = false;
+
+		if ($needPibattery && $usePiBattery && $useMarstek && isset($vars['piBatteryNeededTimer']) && ($timeStamp - $vars['piBatteryNeededTimer']) >= 120) {
+			setMarstekMode('stop');
+			$vars['marstek_Modus'] = 'Charged';
+			//unset($vars['piBatteryNeededTimer']);
+			$varsChanged = true;
+		} elseif ($needPibattery && $usePiBattery && $useMarstek && !isset($vars['piBatteryNeededTimer'])) {
+			$vars['piBatteryNeededTimer'] = $timeStamp;
+			$varsChanged = true;
+		} elseif (!$needPibattery && $hwInvReturn == 0 && $marstekBatMode == 'Passive' && isset($vars['piBatteryNeededTimer']) && ($timeStamp - $vars['piBatteryNeededTimer']) >= 120) {
+			unset($vars['piBatteryNeededTimer']);
+			$varsChanged = true;
+		}
+		
+	}
+	
+// -------------------------------------------------
 // Marstek Set Mode
 // -------------------------------------------------
 
@@ -20,14 +47,14 @@
 		}
 
 // === Marstek Empty
-		if ($marstekBatSoc <= 18 && $marstekBatMode == 'Passive' && $marstekBatState == 'idle' && $hwChargerUsage == 0 && $hwInvReturn == 0 && $hwSolarReturn <= -300){
+		if ($marstekBatSoc <= 18 && $marstekBatMode == 'Passive' && $marstekBatState == 'idle' && $hwChargerUsage == 0 && $hwInvReturn == 0 && $hwSolarReturn <= -500){
 			setMarstekMode('auto');
 			$vars['marstek_Modus'] = 'Auto';
 			$varsChanged = true;
 		}
 		
 // === Marstek Restart
-		if ($marstekBatSoc > $marstekMinimum && $marstekBatSoc < $chargerPausePct && !$pauseMarstekCharging && $marstekBatMode == 'Passive' && $marstekBatState == 'idle' && $hwChargerUsage == 0 && $hwInvReturn == 0 && $hwSolarReturn <= -300){
+		if ($marstekBatSoc > $marstekMinimum && $marstekBatSoc < $chargerPausePct && !$pauseMarstekCharging && $needPibattery == false && !isset($vars['piBatteryNeededTimer']) && $marstekBatMode == 'Passive' && $marstekBatState == 'idle' && $hwChargerUsage == 0 && $hwInvReturn == 0 && $hwSolarReturn <= -500){
 			setMarstekMode('auto');
 			$vars['marstek_Modus'] = 'Auto';
 			$varsChanged = true;
@@ -105,7 +132,7 @@
 
 	if ($runBaseload || $isManualRun){
 // === ChargeTime till 100%
-		if ($hwChargersUsage > $chargerWattsIdle && $batteryPct < 100) {
+		if ($hwChargersUsage > 10 && $batteryPct < 100) {
 			$currentWh = ($batteryPct / 100) * $batteryCapacityWh;
 				
 			$neededWh = $batteryCapacityWh - $currentWh;
@@ -116,7 +143,7 @@
 		}
 
 // === DischargeTime till minimum-SOC
-		if ($hwInvsReturn != 0 && $batteryPct > $batteryMinimum) {
+		if ($hwInvsReturn < -10 && $batteryPct > $batteryMinimum) {
 			$currentWh = ($batteryPct / 100) * $batteryCapacityWh;
 				
 			$minWh = ($batteryMinimum / 100) * $batteryCapacityWh;
@@ -126,23 +153,23 @@
 		}
 
 // === Marstek ChargeTime till 100%
-		if ($hwMarstekSocket > 9 && $marstekBatSoc < 100) {
+		if ($hwMarstekUsage > 10 && $marstekBatSoc < 100) {
 			$currentMarstekWh = ($marstekBatSoc / 100) * $marstekCapacityWh;
 				
 			$neededMarstekWh = $marstekCapacityWh - $currentMarstekWh;
 			$neededMarstekWhAdjusted = $neededMarstekWh;
-			$chargeMarstekTime = $neededMarstekWhAdjusted / $hwMarstekSocket;
+			$chargeMarstekTime = $neededMarstekWhAdjusted / $hwMarstekUsage;
 			$realMarstekChargeTime = convertTime($chargeMarstekTime);
 			
 		}
 		
 // === Marstek DischargeTime till minimum-SOC
-		if ($hwMarstekSocket < 0) {
+		if ($hwMarstekReturn < -10) {
 			$currentMarstekWh = ($marstekBatSoc / 100) * $marstekCapacityWh;
 				
 			$minMarstekWh = ($marstekMinimum / 100) * $marstekCapacityWh;
 			$availableMarstekWh = $currentMarstekWh - $minMarstekWh;
-			$dischargeMarstekTime = $availableMarstekWh / abs($hwMarstekSocket);
+			$dischargeMarstekTime = $availableMarstekWh / abs($hwMarstekReturn);
 			$realMarstekDischargeTime = convertTime($dischargeMarstekTime);
 		}
 	}
@@ -202,7 +229,7 @@
 // = Push data to external Domoticz $batteryPct, $mayDischarge
 // = -------------------------------------------------
 
-	if ($runCharger && !$isManualRun){	
+	if ($runBaseload && !$isManualRun){	
 		sendBatteryStatusToDomoticz();
 	}
 

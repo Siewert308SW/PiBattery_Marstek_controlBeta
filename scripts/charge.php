@@ -172,6 +172,7 @@
 // = -------------------------------------------------
 // = Keep chargers OFF #failsaves
 // = -------------------------------------------------
+	$highConsumption = ($realUsage > 2000 && $hwChargerUsage == 0);
 	if (
 		!$keepChargersOff &&
 		(
@@ -183,7 +184,8 @@
 			$pauseCharging ||
 			!$pauseMarstekCharging ||
 			$battery_calibrated || 
-			$chargeLossCalculation
+			$chargeLossCalculation ||
+			$highConsumption
 		)
 	) {
 		$vars['keepChargersOff'] = true;
@@ -199,7 +201,8 @@
 		!$pauseCharging &&
 		$pauseMarstekCharging &&
 		!$battery_calibrated && 
-		!$chargeLossCalculation
+		!$chargeLossCalculation &&
+		!$highConsumption
 	) {
 		$vars['keepChargersOff'] = false;
 		$varsChanged = true;
@@ -221,8 +224,10 @@
 // = -------------------------------------------------
 
 	$availableSolarPower = 0;
-	if (!$keepChargersOff && $P1ChargerUsage < 0) {
+	if (!$keepChargersOff && $P1ChargerUsage < 0 && $hwChargerUsage == 0) {
 		$availableSolarPower = max(0, abs($P1ChargerUsage) - $chargerhyst);
+	} elseif (!$keepChargersOff && $P1ChargerUsage < 0 && $hwChargerUsage > 0) {
+		$availableSolarPower = max(0, abs($P1ChargerUsage));
 	}
 	
 // = -------------------------------------------------
@@ -321,16 +326,24 @@
 	$isUpscaling 		= ($bestTotal > $currentTotal && $currentTotal == 0);
 	$isDownscaling 		= ($bestTotal < $currentTotal && $currentTotal > 0);	
 	$currentPendingType = null;
-	$isMinimumCombi 	= empty($bestCombi) || $bestCombi === [$masterName];
+	//$isMinimumCombi 	= empty($bestCombi) || $bestCombi === [$masterName];
+	$isMinimumCombi 	= empty($bestCombi);
 
+	if ($isUpscaling) {
+		$currentPendingType = 'upscale';
+
+	} elseif ($isDownscaling && $isMinimumCombi) {
+		$currentPendingType = 'downscale';
+	}
+	
 	//if ($isUpscaling && !empty($bestCombi)) {
 	//	$currentPendingType = 'upscale_from_zero';
 
 	//} else
 		
-	if ($isDownscaling && $isMinimumCombi) {
-		$currentPendingType = 'downscale_to_zero';
-	}
+	//if ($isDownscaling && $isMinimumCombi) {
+	//	$currentPendingType = 'downscale_to_zero';
+	//}
 		
 	$chargerPauseNeeded = ($currentPendingType !== null);
 	$chargerToggleNeeded = false;
