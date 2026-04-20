@@ -164,6 +164,9 @@
 	$bmsWakeActive  		= $vars['bmsWakeActive'] ?? false;
 	$battery_empty			= $vars['battery_empty'] ?? false;
 	$battery_allowed		= $vars['battery_allowed'] ?? false;
+	$invInjection			= $vars['invInjection'] ?? false;
+	$testVarUpdateNeeded	= $vars['testVarUpdateNeeded'] ?? false;
+	$testVarUpdateNotNeeded = $vars['testVarUpdateNotNeeded'] ?? false;
 	
 // = Get/Set Battery Charge/Discharge/SOC values
 	$batteryCapacitykWh     = ($batteryVolt * $batteryAh / 1000);

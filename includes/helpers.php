@@ -5,62 +5,6 @@
 //                           Helpers                             //
 // **************************************************************//
 //
-
-// -------------------------------------------------
-// Marstek Set Mode Passive - piBattery needs to wakeup
-// -------------------------------------------------
-
-	if ($runBaseload || $isManualRun) {
-		$needPibattery = false;
-		$needPibattery = ($hwP1Usage > $chargerhyst && $hwSolarReturn < 0 && $hwChargerUsage == 0 && $hwMarstekReturn < -abs(750) && $marstekBatMode == 'Auto');
-		//debugMsg("needPibattery - {$needPibattery}");
-		//$needPibattery = ($hwSolarReturn < 0 && $hwChargerUsage == 0 && $hwMarstekReturn <= -abs($marstekMaxOutput) && $marstekBatMode == 'Auto' && $marstek_BatModus == 'Auto' && $invOneBaseload == ($ecoflowOneMaxOutput * 10) && $invTwoBaseload == ($ecoflowTwoMaxOutput * 10));
-		//$needPibattery = true;
-		//$marstekNeeded = false;
-
-		if ($needPibattery && $usePiBattery && $useMarstek && isset($vars['piBatteryNeededTimer']) && ($timeStamp - $vars['piBatteryNeededTimer']) >= 120) {
-			setMarstekMode('stop');
-			$vars['marstek_Modus'] = 'Charged';
-			//unset($vars['piBatteryNeededTimer']);
-			$varsChanged = true;
-		} elseif ($needPibattery && $usePiBattery && $useMarstek && !isset($vars['piBatteryNeededTimer'])) {
-			$vars['piBatteryNeededTimer'] = $timeStamp;
-			$varsChanged = true;
-		} elseif (!$needPibattery && $hwInvReturn == 0 && $marstekBatMode == 'Passive' && isset($vars['piBatteryNeededTimer']) && ($timeStamp - $vars['piBatteryNeededTimer']) >= 120) {
-			unset($vars['piBatteryNeededTimer']);
-			$varsChanged = true;
-		}
-		
-	}
-	
-// -------------------------------------------------
-// Marstek Set Mode
-// -------------------------------------------------
-
-	if ($runMarstek && !$isManualRun){
-		
-// === Marstek charged and ready
-		if ($marstekBatSoc == 100 && $marstekBatMode == 'Auto' && $marstekBatState == 'idle'){
-			setMarstekMode('stop');
-			$vars['marstek_Modus'] = 'Charged';
-			$varsChanged = true;
-		}
-
-// === Marstek Empty
-		if ($marstekBatSoc <= 18 && $marstekBatMode == 'Passive' && $marstekBatState == 'idle' && $hwChargerUsage == 0 && $hwInvReturn == 0 && $hwSolarReturn <= -500){
-			setMarstekMode('auto');
-			$vars['marstek_Modus'] = 'Auto';
-			$varsChanged = true;
-		}
-		
-// === Marstek Restart
-		if ($marstekBatSoc > $marstekMinimum && $marstekBatSoc < $chargerPausePct && !$pauseMarstekCharging && $needPibattery == false && !isset($vars['piBatteryNeededTimer']) && $marstekBatMode == 'Passive' && $marstekBatState == 'idle' && $hwChargerUsage == 0 && $hwInvReturn == 0 && $hwSolarReturn <= -500){
-			setMarstekMode('auto');
-			$vars['marstek_Modus'] = 'Auto';
-			$varsChanged = true;
-		}
-		
-	}
 	
 // = -------------------------------------------------	
 // = EcoFlow Fan On/Off 
@@ -73,58 +17,59 @@
 	//	}
 	//}
 
-	if ($runBaseload || $isManualRun){
+	if ($runBaseload && $isManualRun){
 // = -------------------------------------------------
 // = Fase Protection
 // = -------------------------------------------------
-		if ($hwP1Fase >= $maxFaseWatts && !$faseProtect && $hwChargerUsage > 0 && !$isManualRun) {
-			$vars['faseProtect'] = true;
-			$varsChanged = true;
+	if ($hwP1Fase >= $maxFaseWatts && !$faseProtect && $hwChargerUsage > 0 && !$isManualRun) {
+		$vars['faseProtect'] = true;
+		$varsChanged = true;
 
-			if ($hwChargerOneStatus == 'On' || $hwChargerTwoStatus == 'On' || $hwChargerThreeStatus == 'On' || $hwChargerFourStatus == 'On') {
-				switchHwSocket('four', 'Off'); sleep(1);
-				switchHwSocket('three', 'Off'); sleep(1);
-				switchHwSocket('two', 'Off'); sleep(1);
-				switchHwSocket('one', 'Off');
-			}
-			return;
-
-		} elseif ($hwP1Fase < $maxFaseWatts && $faseProtect && $hwChargerUsage == 0 && !$isManualRun) {
-			$vars['faseProtect'] = false;
-			$varsChanged = true;
+		if ($hwChargerOneStatus == 'On' || $hwChargerTwoStatus == 'On' || $hwChargerThreeStatus == 'On' || $hwChargerFourStatus == 'On') {
+			switchHwSocket('four', 'Off'); sleep(1);
+			switchHwSocket('three', 'Off'); sleep(1);
+			switchHwSocket('two', 'Off'); sleep(1);
+			switchHwSocket('one', 'Off');
 		}
+		return;
 
+	} elseif ($hwP1Fase < $maxFaseWatts && $faseProtect && $hwChargerUsage == 0 && !$isManualRun) {
+		$vars['faseProtect'] = false;
+		$varsChanged = true;
+	}
+	}
+	
 // = -------------------------------------------------
 // = Battery voltage low, keep BMS awake
 // = -------------------------------------------------
-		if ($pvAvInputVoltage < $batteryVoltMin && $hwChargerUsage == 0 && $hwInvReturn == 0 && !$bmsWakeActive && !$isManualRun) {
+	if ($runCharger && $pvAvInputVoltage <= $batteryVoltMin && $hwChargersUsage == 0 && $hwInvsReturn == 0 && !$bmsWakeActive && !$isManualRun) {
 
-			if ($hwChargerTwoStatus == 'Off') {
-				switchHwSocket('two', 'On');
-				sleep(5);
-			}
-
-			$vars['bmsWakeActive'] = true;
-			$vars['battery_bmsWake_time'] = time();
-			$varsChanged = true;
-			return;
-
-		} elseif ($bmsWakeActive && $hoursSince_Wake_time < 0.5 && !$isManualRun && $hwChargerTwoStatus == 'On' && $hwChargerUsage > $chargerWattsIdle) {
-			return;
-
-		} elseif ($bmsWakeActive && $hoursSince_Wake_time >= 0.5 && !$isManualRun) {
-
-			if ($hwChargerTwoStatus == 'On') {
-				switchHwSocket('two', 'Off');
-				sleep(5);
-			}
-
-			$vars['bmsWakeActive'] = false;
-			unset($vars['battery_bmsWake_time']);
-			$varsChanged = true;
-			return;
+		if ($hwChargerTwoStatus == 'Off') {
+			switchHwSocket('two', 'On');
+			sleep(5);
 		}
+
+		$vars['bmsWakeActive'] = true;
+		$vars['battery_bmsWake_time'] = time();
+		$varsChanged = true;
+		return;
+
+	//} elseif ($bmsWakeActive && $hoursSince_Wake_time < 0.5 && !$isManualRun && $hwChargerTwoStatus == 'On' && $hwChargersUsage > $chargerWattsIdle) {
+	//	return;
+
+	} elseif ($bmsWakeActive && $hoursSince_Wake_time >= 0.5 && !$isManualRun) {
+
+		if ($hwChargerTwoStatus == 'On') {
+			switchHwSocket('two', 'Off');
+			sleep(5);
+		}
+
+		$vars['bmsWakeActive'] = false;
+		unset($vars['battery_bmsWake_time']);
+		$varsChanged = true;
+		return;
 	}
+//}
 	
 // = -------------------------------------------------	
 // = Estimated charge/discharge time  || $runCharger
@@ -177,7 +122,7 @@
 // = -------------------------------------------------	
 // = PushUpdate to Domoticz
 // = -------------------------------------------------
-	if ($runCharger || $isManualRun){
+	if ($runBaseload && !$isManualRun){
 		
 		UpdateDomoticzDevice($batterySOCIDX, ''.$batteryPct.'');
 		usleep(100000);

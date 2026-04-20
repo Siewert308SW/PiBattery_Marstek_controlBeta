@@ -56,7 +56,7 @@
 	
 // = Determine if Charger script may execute
 	if(!$isManualRun) {
-		if (!isset($scriptTimer['lastChargerRun']) || ($timeStamp - $scriptTimer['lastChargerRun']) >= 60) {
+		if (!isset($scriptTimer['lastChargerRun']) || ($timeStamp - $scriptTimer['lastChargerRun']) >= 30) {
 			$runCharger = true;
 		}
 
@@ -82,24 +82,23 @@
 	if ($runBaseload == true || $isManualRun) {
 		$scriptTimer['lastBaseloadRun'] = $timeStamp;
 		writePiJson($varsTimerFile, $scriptTimer);
-		usleep(300000);
 		require_once $piBatteryPath . 'scripts/baseload.php';
 	}
 
-// = Marstek API script may be executed	
-	if ($runMarstek == true && !$isManualRun) {
-		$scriptTimer['lastMarstekRun'] = $timeStamp;
-		writePiJson($varsTimerFile, $scriptTimer);
-		usleep(300000);
-		require_once $piBatteryPath . 'scripts/marstek.php';
-	}
-	
 // = Charger script may execute
 	if ($runCharger == true || $isManualRun) {
 		$scriptTimer['lastChargerRun'] = $timeStamp;
 		writePiJson($varsTimerFile, $scriptTimer);
-		usleep(300000);
+		usleep(500000);
 		require_once $piBatteryPath . 'scripts/charge.php';
+	}
+	
+// = Marstek API script may be executed	
+	if ($runMarstek == true && !$isManualRun) {
+		$scriptTimer['lastMarstekRun'] = $timeStamp;
+		writePiJson($varsTimerFile, $scriptTimer);
+		usleep(10000000);
+		require_once $piBatteryPath . 'scripts/marstek.php';
 	}
 
 // = -------------------------------------------------

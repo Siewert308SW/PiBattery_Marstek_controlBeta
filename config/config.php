@@ -19,7 +19,7 @@
 // = Battery variables
 	$batteryVolt            = 25.6;         					 // Battery Voltage
 	$batteryAh              = 300;          					 // Total Ah of all batteries
-	$batteryMinimum         = 12;           					 // Minimum percentage to keep in the battery, wintertime will be automaticly set to 25%
+	$batteryMinimum         = 15;           					 // Minimum percentage to keep in the battery, wintertime will be automaticly set to 25%
 	$marstekMinimum         = 18;
 
 	$batteryVoltMax         = 27.0; 
@@ -30,8 +30,8 @@
 	$ecoflowOneMaxOutput   	= 580;
 	$ecoflowTwoMaxOutput   	= 580;
 	$marstekMaxOutput      	= 800;
-	$ecoflowMinOutput      	= 80;         					     // Minimum output (Watts); the inverter is allowed to deliver
-	$ecoflowOutputOffSet   	= 5;           					 	 // Subtract this value (Watts) from the new baseload: this part is always imported from the grid to prevent injection
+	$ecoflowMinOutput      	= 150;         					     // Minimum output (Watts); the inverter is allowed to deliver
+	$ecoflowOutputOffSet   	= 1;           					 	 // Subtract this value (Watts) from the new baseload: this part is always imported from the grid to prevent injection
 	$ecoflowMaxInvTemp     	= 65;           					 	 // Maximum internal temperature (°C); inverter stops feeding above this temperature
 	
 // = Charger variables
@@ -88,7 +88,6 @@
 	$ecoflowTwoSerialNumber = 'HWXXXXXXXXXXXXXX';		         // Powerstream Two serialnummer
 
 // = Domoticz dummy devices variables
-
 	$domoticzIP			    = '127.0.0.1:8080'; 	    	     // IP + poort van Domoticz
 	$batterySOCIDX 		 	= '64';
 	$marstekSOCIDX 		 	= '152';
@@ -105,7 +104,6 @@
 	$batteryRTEIDX 		    = '145';
 	
 // = URLs
-
 	$baseUrl = 'http://'.$domoticzIP.'/json.htm?type=command&param=getdevices&rid=';
 	$urls = [	
 		'batteryVoltageIDX'       => $baseUrl . $batteryVoltageIDX,	

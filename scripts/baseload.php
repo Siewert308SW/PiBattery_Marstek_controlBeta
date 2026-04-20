@@ -119,16 +119,16 @@
 			
 	}
 	
-	if($usePiBattery && $useMarstek && isset($vars['battery_empty'])){
+	if(($usePiBattery || $useMarstek) && ($batteryPct > 45 && $marstekBatSoc > 45 && isset($vars['battery_empty']))){
 		unset($vars['battery_empty']);
 		$varsChanged = true;
 	}
 
 // === Set baseload to null when battery calibration is still running || isset($vars['battery_calibrated'])  || $battery_allowed == false || $batteryPct > 100.00
-	if (isset($vars['charge_loss_calculation']) || $batteryPct > 100.00) {
+	if (isset($vars['charge_loss_calculation']) || isset($vars['battery_awaitingCalibration']) || $batteryPct > 100.00) {
 		$forceBaseloadNull = true;
 		if ($debug == 'yes' && $isManualRun){
-		debugMsg('Ontladen geblokkeerd: Batterij calibratie moet worden uitgevoerd');
+		debugMsg('Ontladen geblokkeerd: Batterij calibratie moet nog worden uitgevoerd');
 		}
 	}
 		
@@ -197,24 +197,30 @@
 		if (($newBaseload / 10) != $oldBaseload) {
 			$varsChanged = true;
 			$vars['oldBaseload'] = ($newBaseload / 10);
+			if (($newBaseload / 10) == 0) {
+			$vars['invInjection'] = false;
+			} else {
+			$vars['invInjection'] = true;	
+			}
 		}
 
 
 // === Force baseload null #failsave
-	} elseif (!$isManualRun && $forceBaseloadNull == true && $hwInvReturn < 0) {	
+	} elseif ((!$isManualRun && $forceBaseloadNull == true) && ($hwInvReturn < 0 || $oldBaseload != 0)) {	
 
+		if ($hwInvReturn < 0) {
 		$ecoflow->setDeviceFunction($ecoflowOneSerialNumber, 'WN511_SET_PERMANENT_WATTS_PACK', ['permanent_watts' => 0]);
 		sleep(3);
 		$ecoflow->setDeviceFunction($ecoflowTwoSerialNumber, 'WN511_SET_PERMANENT_WATTS_PACK', ['permanent_watts' => 0]);
 		sleep(2);
-		if($marstekBatMode != 'Auto' && $marstek_BatModus != 'Auto'){
 		setMarstekReturn(0);
 		}
-			
+		
 // === Reset baseload variable				
 		if ($oldBaseload != 0) {
 			$varsChanged = true;
 			$vars['oldBaseload'] = 0;
+			$vars['invInjection'] = false;
 		}
 	}
 

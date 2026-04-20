@@ -289,11 +289,11 @@
 		$totalPct = round(($batteryPct + $marstekBatSoc) / 2, 0);
 		
 // === Calculate total injection		
-		if ($marstekBatSoc > ($marstekMinimum * 2)) {
+		if ($marstekBatSoc > 50) {
 			$totalDischargeMarstek = $marstekMaxOutput;
 		}
 
-		if ($batteryPct > ($batteryMinimum * 3)) {
+		if ($batteryPct > 50) {
 			$totalDischargePiBattery = $ecoflowOneMaxOutput + $ecoflowTwoMaxOutput;
 		}
 
@@ -492,6 +492,58 @@
 		socket_close($sock);
 	}
 
+// = -------------------------------------------------	
+// = Marstek Set Charge Power
+// = -------------------------------------------------
+	function setMarstekUsage($watts) {
+		global $marstekIP, $marstekPort;
+		$ip   = $marstekIP;
+		$port = $marstekPort;
+		$timeout = 3;
+
+		// === UDP socket
+		$sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+		socket_set_option($sock, SOL_SOCKET, SO_RCVTIMEO, [
+			"sec"  => $timeout,
+			"usec" => 0
+		]);
+
+		// === Payload
+		$payload = [
+			"id" => 200,
+			"method" => "ES.SetMode",
+			"params" => [
+				"id" => 0,
+				"config" => [
+					"mode" => "Passive",
+					"passive_cfg" => [
+						"power" => -abs($watts),
+						"cd_time" => 600
+					]
+				]
+			]
+		];
+
+		$json = json_encode($payload);
+
+		// === Send
+		echo "TX: $json\n";
+		socket_sendto($sock, $json, strlen($json), 0, $ip, $port);
+
+		// === Receive
+		$buf = '';
+		$from = '';
+		$portOut = 0;
+
+		if (@socket_recvfrom($sock, $buf, 2048, 0, $from, $portOut)) {
+			echo "RX: $buf\n";
+		} else {
+			echo "RX: timeout / geen response\n";
+		}
+
+		socket_close($sock);
+	}
+	
 // = -------------------------------------------------
 // = Marstek UDP helper
 // = -------------------------------------------------
