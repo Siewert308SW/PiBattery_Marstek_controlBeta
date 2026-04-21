@@ -134,9 +134,13 @@
 		usleep(100000);
 		UpdateDomoticzDevice($batteryVoltageIDX, ''.$pvAvInputVoltage.'');
 		usleep(100000);
-		UpdateDomoticzDevice($inputCounterIDX, ''.$hwChargerUsage.'');
+		UpdateDomoticzDevice($inputCounterIDX, ''.$hwChargersUsage.'');
 		usleep(100000);
-		UpdateDomoticzDevice($outputCounterIDX, ''.$hwInvReturn.'');
+		UpdateDomoticzDevice($outputCounterIDX, ''.$hwInvsReturn.'');
+		usleep(100000);
+		UpdateDomoticzDevice($marstekInputCounterIDX, ''.$hwMarstekUsage.'');
+		usleep(100000);
+		UpdateDomoticzDevice($marstekOutputCounterIDX, ''.$hwMarstekReturn.'');
 		usleep(100000);
 		if ($hwChargersUsage > 10 && $batteryPct < 100) {
 		UpdateDomoticzDevice($batteryChargeTimeIDX, ''.$realChargeTime.'');

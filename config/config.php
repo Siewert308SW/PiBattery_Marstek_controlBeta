@@ -100,6 +100,8 @@
 	$marstekDischargeTimeIDX= '154';
 	$inputCounterIDX 	    = '60';
 	$outputCounterIDX 	    = '58';
+	$marstekInputCounterIDX = '160';
+	$marstekOutputCounterIDX= '161';
 	//$ecoFlowTempIDX 		= '50';
 	$batteryRTEIDX 		    = '145';
 	
@@ -118,6 +120,8 @@
 		'marstekDischargeTimeIDX' => $baseUrl . $marstekDischargeTimeIDX,
 		'outputCounterIDX'        => $baseUrl . $outputCounterIDX,
 		'inputCounterIDX'         => $baseUrl . $inputCounterIDX,
+		'marstekOutputCounterIDX' => $baseUrl . $marstekOutputCounterIDX,
+		'marstekInputCounterIDX'  => $baseUrl . $marstekInputCounterIDX,
 		'batteryRTEIDX'           => $baseUrl . $batteryRTEIDX
 	];
 

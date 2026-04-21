@@ -252,11 +252,13 @@
 	  global $marstekDischargeTimeIDX;
 	  global $inputCounterIDX;
 	  global $outputCounterIDX;
+	  global $marstekInputCounterIDX;
+	  global $marstekOutputCounterIDX;
 	  global $pvCounterIDX;
 	  //global $ecoFlowTempIDX;
 	  global $batteryRTEIDX;
 	  
-	  if ($idx == $inputCounterIDX || $idx == $outputCounterIDX || $idx == $batterySOCIDX || $idx == $marstekSOCIDX || $idx == $batteryVoltageIDX || $idx == $pvCounterIDX || /*$idx == $ecoFlowTempIDX || */$idx == $batteryRTEIDX){
+	  if ($idx == $marstekInputCounterIDX || $idx == $marstekOutputCounterIDX || $idx == $inputCounterIDX || $idx == $outputCounterIDX || $idx == $batterySOCIDX || $idx == $marstekSOCIDX || $idx == $batteryVoltageIDX || $idx == $pvCounterIDX || /*$idx == $ecoFlowTempIDX || */$idx == $batteryRTEIDX){
 	  $reply=json_decode(file_get_contents('http://'.$domoticzIP.'/json.htm?type=command&param=udevice&idx='.$idx.'&nvalue=0&svalue='.$cmd.';0'),true);
 	  }
 	  
@@ -286,14 +288,15 @@
 		$totalDischargeMarstek  = 0;
 		$totalDischargePiBattery  = 0;
 		$dischargeAvailable = 0;
-		$totalPct = round(($batteryPct + $marstekBatSoc) / 2, 0);
+		$totalPibatteryPct = round(($batteryPct), 0);
+		$totalMarstekPct = round(($marstekBatSoc), 0);
 		
 // === Calculate total injection		
-		if ($marstekBatSoc > 50) {
+		if ($marstekBatSoc > 35) {
 			$totalDischargeMarstek = $marstekMaxOutput;
 		}
 
-		if ($batteryPct > 50) {
+		if ($batteryPct > 35) {
 			$totalDischargePiBattery = $ecoflowOneMaxOutput + $ecoflowTwoMaxOutput;
 		}
 
@@ -312,10 +315,15 @@
 			[
 				'name'  => 'PiBattery_BatteryPct',
 				'type'  => 0, // Integer
-				'value' => (string)$totalPct,
+				'value' => (string)$totalPibatteryPct,
 			],
 			[
-				'name'  => 'PiBattery_mayDischarge',
+				'name'  => 'Marstek_BatteryPct',
+				'type'  => 0, // Integer
+				'value' => (string)$totalMarstekPct,
+			],
+			[
+				'name'  => 'PiBattery_DischargeAvailable',
 				'type'  => 0, // Integer
 				'value' => (string)$dischargeAvailable,
 			],

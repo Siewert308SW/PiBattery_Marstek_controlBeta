@@ -227,10 +227,10 @@
 // = Determine available PV surplus && $hwChargerUsage == 0
 // = -------------------------------------------------
 	$grossAvailableSolarPower = 0;
-	if ($P1ChargerUsage < 0 && $hwSolarReturn < -10 && !$keepChargersOff) {
+	if ($P1ChargerUsage < 0 && $hwSolarReturn < -10 && $hwChargerUsage == 0 && !$keepChargersOff) {
 		$grossAvailableSolarPower = max(0, abs($P1ChargerUsage) - ($chargerhyst / 2));
-	//} elseif ($P1ChargerUsage < 0 && $hwChargerUsage > 0 && !$keepChargersOff) {
-	//	$grossAvailableSolarPower = max(0, abs($P1ChargerUsage));
+	} elseif ($P1ChargerUsage < 0 && $hwSolarReturn < -10 && $hwChargerUsage > 0 && !$keepChargersOff) {
+		$grossAvailableSolarPower = max(0, abs($P1ChargerUsage));
 	}
 
 // = -------------------------------------------------

@@ -199,8 +199,8 @@
 	$totalCapacitykWh       = ($batteryCapacitykWh + $marstekCapacitykWh);
 
 // = Determine which battery is active for injection 
-	$usePiBattery 			= !($pvAvInputVoltage < $batteryVoltMin || $batteryPct <= $batteryMinimum);
-	$useMarstek   			= ($marstekBatSoc > $marstekMinimum);
+	$usePiBattery 			= !($pvAvInputVoltage < $batteryVoltMin || $batteryPct <= $batteryMinimum || isset($vars['piBattery_empty']));
+	$useMarstek   			= ($marstekBatSoc > $marstekMinimum && !isset($vars['marstek_empty']));
 	
 	$ecoflowOneMax   		= ($ecoflowOneMaxOutput * 10);
 	$ecoflowTwoMax   		= ($ecoflowTwoMaxOutput * 10);

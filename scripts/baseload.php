@@ -106,21 +106,46 @@
 	}
 	
 // === Set baseload to null when battery is empty
-	if(!$usePiBattery && !$useMarstek){
-		$forceBaseloadNull = true;
+	if(!$usePiBattery){
+		//$forceBaseloadNull = true;
 		if ($debug == 'yes' && $isManualRun){
-			debugMsg('Ontladen geblokkeerd: Batterij is leeg');
+			debugMsg('piBattery ontladen geblokkeerd: Batterij is leeg');
 		}
 		
-		if (!isset($vars['battery_empty'])) {	
-			$vars['battery_empty'] = true;
+		if (!isset($vars['piBattery_empty'])) {	
+			$vars['piBattery_empty'] = true;
 			$varsChanged = true;
 		}
 			
 	}
+
+	if(!$useMarstek){
+		//$forceBaseloadNull = true;
+		if ($debug == 'yes' && $isManualRun){
+			debugMsg('Marstek ontladen geblokkeerd: Marstek is leeg');
+		}
+		
+		if (!isset($vars['marstek_empty'])) {	
+			$vars['marstek_empty'] = true;
+			$varsChanged = true;
+		}
+			
+	}
+
+	if(!$usePiBattery && !$useMarstek){
+		$forceBaseloadNull = true;
+		if ($debug == 'yes' && $isManualRun){
+			debugMsg('Ontladen geblokkeerd: Batterijen zijn leeg');
+		}
+	}
 	
-	if(($usePiBattery || $useMarstek) && ($batteryPct > 45 && $marstekBatSoc > 45 && isset($vars['battery_empty']))){
-		unset($vars['battery_empty']);
+	if($usePiBattery && $batteryPct > 35 && isset($vars['piBattery_empty'])){
+		unset($vars['piBattery_empty']);
+		$varsChanged = true;
+	}
+	
+	if($useMarstek && $marstekBatSoc > 35 && isset($vars['marstek_empty'])){
+		unset($vars['marstek_empty']);
 		$varsChanged = true;
 	}
 
@@ -178,9 +203,9 @@
 		
 	$delta = abs($newBaseload - abs($hwInvReturn * 10));
 
-	if ($forceBaseloadNull == false) {
+	//if ($forceBaseloadNull == false) {
 		$updateNeeded = ($delta > ($baseloadDelta * 10));
-	}
+	//}
 	
 // = -------------------------------------------------	
 // = Update baseload
