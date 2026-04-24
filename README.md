@@ -38,7 +38,7 @@ Maar in een configuratie als de mijne (25,6v batterijen) is dat begrensd 600w pe
 En de Marstek die wel op een andere fase is aangesloten maar niet op zijn eigen groep is dan ook begrensd op 800w.
 
 <p align="center">
-<img src="images/verbruik.png" alt="Mijn verbruik" width="75%">
+<img src="images/zelfconsumptie.png" alt="Mijn verbruik" width="75%">
 </p>
 <p align="center"><small>Een productie/verbruiks dag</small></p>
 
@@ -207,7 +207,8 @@ Voorbeeld van mijn cronjob:
 
 ```
 * * * * * sudo php /path2/pibattery.php > /dev/null
-* * * * * (sleep 30; sudo php /path2/pibattery/pibattery.php) > /dev/null
+* * * * * (sleep 20; sudo php /path2/pibattery/pibattery.php) > /dev/null
+* * * * * (sleep 40; sudo php /path2/pibattery/pibattery.php) > /dev/null
 ````
 
 ---
