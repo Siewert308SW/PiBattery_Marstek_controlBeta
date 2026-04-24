@@ -199,6 +199,11 @@ Hier stel je onder andere in:
 </p>   
 <p align="center"><small>Terminal output</small></p>
 
+<p align="center">
+<img src="images/domoticz.png" alt="Domoticz" width="35%">
+</p>   
+<p align="center"><small>Domoticz</small></p>
+
 ---
 
 ## Cronjob

@@ -122,7 +122,7 @@
 		printRow('Laders verbruik', $hwChargerUsage, 'Watt');
 		echo ' '.PHP_EOL;
 	
-// === Print Battery Status		
+// === Print Batterij Status		
 		echo " -/- PiBatterij @ {$batteryCapacitykWh} kWh           -\-".PHP_EOL;
 		printRow('Batterij SOC', $batteryPct, '%');
 		printRow('Batterij voltage', $pvAvInputVoltage, 'Volt');
@@ -181,12 +181,12 @@
 	
 // === Print Various
 		echo ' -/- Various                         -\-'.PHP_EOL;
-		printRow('Battery laad pauze '.$chargerPausePct.'% <-> 100%', ($pauseCharging ? 'Actief' : 'Niet actief'));
+		printRow('Batterij laad pauze '.$chargerPausePct.'% <-> 100%', ($pauseCharging ? 'Actief' : 'Niet actief'));
 		printRow('Marstek laad pauze '.$chargerPausePct.'% <-> 100%', ($pauseMarstekCharging ? 'Actief' : 'Niet actief'));
 		printRow("BMS bescherming", ($bmsWakeActive ? "Actief" : "Niet actief"));
 		printRow("Fase {$fase} bescherming", ($faseProtect ? "Actief" : "Niet actief"));
-		printRow("Battery laden geblokkeerd", ($keepChargersOff ? "Actief" : "Niet actief"));
-		printRow("Battery ontladen geblokkeerd", ($forceBaseloadNull ? "Actief" : "Niet actief"));
+		printRow("Batterij laden geblokkeerd", ($keepChargersOff ? "Actief" : "Niet actief"));
+		printRow("Batterij ontladen geblokkeerd", ($forceBaseloadNull ? "Actief" : "Niet actief"));
 		echo ' '.PHP_EOL;
 		
 // === Print additional debugMsg

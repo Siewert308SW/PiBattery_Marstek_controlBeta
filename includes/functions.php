@@ -257,6 +257,8 @@
 	  global $pvCounterIDX;
 	  //global $ecoFlowTempIDX;
 	  global $batteryRTEIDX;
+
+	  $reply = ['status' => 'ERROR'];
 	  
 	  if ($idx == $marstekInputCounterIDX || $idx == $marstekOutputCounterIDX || $idx == $inputCounterIDX || $idx == $outputCounterIDX || $idx == $batterySOCIDX || $idx == $marstekSOCIDX || $idx == $batteryVoltageIDX || $idx == $pvCounterIDX || /*$idx == $ecoFlowTempIDX || */$idx == $batteryRTEIDX){
 	  $reply=json_decode(file_get_contents('http://'.$domoticzIP.'/json.htm?type=command&param=udevice&idx='.$idx.'&nvalue=0&svalue='.$cmd.';0'),true);
@@ -266,7 +268,7 @@
 	  $reply=json_decode(file_get_contents('http://'.$domoticzIP.'/json.htm?type=command&param=udevice&idx='.$idx.'&nvalue=0&svalue='.$cmd.''),true);
 	  }
 	  
-	  if($reply['status']=='OK') $reply='OK';else $reply='ERROR';
+	  if (($reply['status'] ?? '') == 'OK') $reply='OK'; else $reply='ERROR';
 	  return $reply;
 	}
 

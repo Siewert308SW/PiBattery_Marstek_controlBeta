@@ -120,53 +120,52 @@
 // = -------------------------------------------------
 	if ($runBaseload && !$isManualRun){
 		
-		UpdateDomoticzDeviceIfChanged($batterySOCIDX, ''.$batteryPct.'');
-		usleep(100000);
-		UpdateDomoticzDeviceIfChanged($marstekSOCIDX, ''.$marstekBatSoc.'');
-		usleep(100000);
-		UpdateDomoticzDeviceIfChanged($marstekAvailIDX, ''.$marstekAvailable.'');
-		usleep(100000);		
-		UpdateDomoticzDeviceIfChanged($batteryAvailIDX, ''.$batteryAvailable.'');
-		usleep(100000);
-		UpdateDomoticzDeviceIfChanged($batteryVoltageIDX, ''.$pvAvInputVoltage.'');
-		usleep(100000);
-		UpdateDomoticzDeviceIfChanged($inputCounterIDX, ''.$hwChargersUsage.'');
-		usleep(100000);
-		UpdateDomoticzDeviceIfChanged($outputCounterIDX, ''.$hwInvsReturn.'');
-		usleep(100000);
-		UpdateDomoticzDeviceIfChanged($marstekInputCounterIDX, ''.$hwMarstekUsage.'');
-		usleep(100000);
-		UpdateDomoticzDeviceIfChanged($marstekOutputCounterIDX, ''.$hwMarstekReturn.'');
-		usleep(100000);
+		if (UpdateDomoticzDeviceIfChanged($batterySOCIDX, ''.$batteryPct.'') == 'OK') usleep(100000);
+
+		if (UpdateDomoticzDeviceIfChanged($marstekSOCIDX, ''.$marstekBatSoc.'') == 'OK') usleep(100000);
+
+		if (UpdateDomoticzDeviceIfChanged($marstekAvailIDX, ''.$marstekAvailable.'') == 'OK') usleep(100000);
+		
+		if (UpdateDomoticzDeviceIfChanged($batteryAvailIDX, ''.$batteryAvailable.'') == 'OK') usleep(100000);
+
+		if (UpdateDomoticzDeviceIfChanged($batteryVoltageIDX, ''.$pvAvInputVoltage.'') == 'OK') usleep(100000);
+
+		if (UpdateDomoticzDeviceIfChanged($inputCounterIDX, ''.$hwChargersUsage.'') == 'OK') usleep(100000);
+
+		if (UpdateDomoticzDeviceIfChanged($outputCounterIDX, ''.$hwInvsReturn.'') == 'OK') usleep(100000);
+
+		if (UpdateDomoticzDeviceIfChanged($marstekInputCounterIDX, ''.$hwMarstekUsage.'') == 'OK') usleep(100000);
+
+		if (UpdateDomoticzDeviceIfChanged($marstekOutputCounterIDX, ''.$hwMarstekReturn.'') == 'OK') usleep(100000);
+
 		if ($hwChargersUsage > 15 && $batteryPct < 100) {
-		UpdateDomoticzDeviceIfChanged($batteryChargeTimeIDX, ''.$realChargeTime.'');
+		if (UpdateDomoticzDeviceIfChanged($batteryChargeTimeIDX, ''.$realChargeTime.'') == 'OK') usleep(100000);
 		
 		} else {
-		UpdateDomoticzDeviceIfChanged($batteryChargeTimeIDX, '00:00');
+		if (UpdateDomoticzDeviceIfChanged($batteryChargeTimeIDX, '00:00') == 'OK') usleep(100000);
 		}
-		usleep(100000);
+
 		if ($hwInvsReturn <= -15 && $batteryPct > 0) {
-		UpdateDomoticzDeviceIfChanged($batteryDischargeTimeIDX, ''.$realDischargeTime.'');
+		if (UpdateDomoticzDeviceIfChanged($batteryDischargeTimeIDX, ''.$realDischargeTime.'') == 'OK') usleep(100000);
 		} else {
-		UpdateDomoticzDeviceIfChanged($batteryDischargeTimeIDX, '00:00');
+		if (UpdateDomoticzDeviceIfChanged($batteryDischargeTimeIDX, '00:00') == 'OK') usleep(100000);
 		}
 
 		if ($hwMarstekSocket > 15 && $marstekBatSoc < 100) {
-		UpdateDomoticzDeviceIfChanged($marstekChargeTimeIDX, ''.$realMarstekChargeTime.'');
+		if (UpdateDomoticzDeviceIfChanged($marstekChargeTimeIDX, ''.$realMarstekChargeTime.'') == 'OK') usleep(100000);
 		
 		} else {
-		UpdateDomoticzDeviceIfChanged($marstekChargeTimeIDX, '00:00');
+		if (UpdateDomoticzDeviceIfChanged($marstekChargeTimeIDX, '00:00') == 'OK') usleep(100000);
 		}
-		usleep(100000);
+
 		if ($hwMarstekSocket < -15 && $marstekBatSoc > 16) {
-		UpdateDomoticzDeviceIfChanged($marstekDischargeTimeIDX, ''.$realMarstekDischargeTime.'');
+		if (UpdateDomoticzDeviceIfChanged($marstekDischargeTimeIDX, ''.$realMarstekDischargeTime.'') == 'OK') usleep(100000);
 		} else {
-		UpdateDomoticzDeviceIfChanged($marstekDischargeTimeIDX, '00:00');
+		if (UpdateDomoticzDeviceIfChanged($marstekDischargeTimeIDX, '00:00') == 'OK') usleep(100000);
 		}
 		
-		usleep(100000);
 		$chargerLossDomo = ($chargerLoss * 100);
-		UpdateDomoticzDeviceIfChanged($batteryRTEIDX, ''.$chargerLossDomo.'');
+		if (UpdateDomoticzDeviceIfChanged($batteryRTEIDX, ''.$chargerLossDomo.'') == 'OK') usleep(100000);
 
 	}
 
