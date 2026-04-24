@@ -107,7 +107,6 @@
 	
 // === Set baseload to null when battery is empty
 	if(!$usePiBattery){
-		//$forceBaseloadNull = true;
 		if ($debug == 'yes' && $isManualRun){
 			debugMsg('piBattery ontladen geblokkeerd: Batterij is leeg');
 		}
@@ -120,7 +119,6 @@
 	}
 
 	if(!$useMarstek){
-		//$forceBaseloadNull = true;
 		if ($debug == 'yes' && $isManualRun){
 			debugMsg('Marstek ontladen geblokkeerd: Marstek is leeg');
 		}
@@ -139,17 +137,17 @@
 		}
 	}
 	
-	if($usePiBattery && $batteryPct > 35 && isset($vars['piBattery_empty'])){
+	if(!$usePiBattery && $batteryPct > 35 && isset($vars['piBattery_empty'])){
 		unset($vars['piBattery_empty']);
 		$varsChanged = true;
 	}
 	
-	if($useMarstek && $marstekBatSoc > 35 && isset($vars['marstek_empty'])){
+	if(!$useMarstek && $marstekBatSoc > 35 && isset($vars['marstek_empty'])){
 		unset($vars['marstek_empty']);
 		$varsChanged = true;
 	}
 
-// === Set baseload to null when battery calibration is still running || isset($vars['battery_calibrated'])  || $battery_allowed == false || $batteryPct > 100.00
+// === Set baseload to null when battery calibration is still running
 	if (isset($vars['charge_loss_calculation']) || isset($vars['battery_awaitingCalibration']) || $batteryPct > 100.00) {
 		$forceBaseloadNull = true;
 		if ($debug == 'yes' && $isManualRun){
@@ -174,12 +172,6 @@
 		$forceBaseloadNull = true;
 		debugMsg('Ontladen geblokkeerd: Marstek in AUTO Mode');
 	}
-	
-	//debugMsg("InvOneBaseload: {$invOneBaseload}");
-	//debugMsg("InvTwoBaseload: {$invTwoBaseload}");
-	//debugMsg("MarstekBaseload: {$marstekBaseload}");
-	//$totaal = (($invOneBaseload + $invTwoBaseload + $marstekBaseload) / 10);
-	//debugMsg("Totale Baseload: {$totaal}");
 
 // Set Baseload null when inverters aren't online
 	if ($hwInvOneStatus == 'Off' || $hwInvTwoStatus == 'Off' || $hwMarstekStatus == 'Off'){
@@ -203,9 +195,13 @@
 		
 	$delta = abs($newBaseload - abs($hwInvReturn * 10));
 
-	//if ($forceBaseloadNull == false) {
+	if ($forceBaseloadNull == false) {
+		if($hwP1Usage >= 0){
 		$updateNeeded = ($delta > ($baseloadDelta * 10));
-	//}
+		} elseif($hwP1Usage < 0){
+		$updateNeeded = ($delta > (5 * 10));
+		}
+	}
 	
 // = -------------------------------------------------	
 // = Update baseload
@@ -231,7 +227,7 @@
 
 
 // === Force baseload null #failsave
-	} elseif ((!$isManualRun && $forceBaseloadNull == true) && ($hwInvReturn < 0 || $oldBaseload != 0)) {	
+	} elseif ((!$isManualRun && $forceBaseloadNull == true) && ($hwInvReturn < 0 && $oldBaseload != 0)) {	
 
 		if ($hwInvReturn < 0) {
 		$ecoflow->setDeviceFunction($ecoflowOneSerialNumber, 'WN511_SET_PERMANENT_WATTS_PACK', ['permanent_watts' => 0]);

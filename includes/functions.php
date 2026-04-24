@@ -270,6 +270,34 @@
 	  return $reply;
 	}
 
+// = -------------------------------------------------
+// = Function get/compare and update Domoticz data
+// = -------------------------------------------------
+	function UpdateDomoticzDeviceIfChanged($idx, $cmd) {
+		global $domoticzStateFile;
+
+		$cmd = (string)$cmd;
+
+		$state = [];
+		if (file_exists($domoticzStateFile)) {
+			$state = json_decode(file_get_contents($domoticzStateFile), true);
+			if (!is_array($state)) $state = [];
+		}
+
+		if (($state[$idx] ?? null) === $cmd) {
+			return 'SKIP';
+		}
+
+		$reply = UpdateDomoticzDevice($idx, $cmd);
+
+		if ($reply == 'OK') {
+			$state[$idx] = $cmd;
+			writeJsonLocked($domoticzStateFile, $state);
+		}
+
+		return $reply;
+	}
+	
 // = -------------------------------------------------	
 // = Send PiBattery/Marstek battery status to Domoticz
 // = -------------------------------------------------
@@ -314,12 +342,12 @@
 		$updates = [
 			[
 				'name'  => 'PiBattery_BatteryPct',
-				'type'  => 0, // Integer
+				'type'  => 0,
 				'value' => (string)$totalPibatteryPct,
 			],
 			[
 				'name'  => 'Marstek_BatteryPct',
-				'type'  => 0, // Integer
+				'type'  => 0,
 				'value' => (string)$totalMarstekPct,
 			],
 			[
@@ -350,17 +378,8 @@
 
 			curl_close($ch);
 
-			if ($response === false || $httpCode !== 200) {
-				echo "Domoticz update mislukt voor {$update['name']} | HTTP: {$httpCode} | Error: {$error}\n";
-				continue;
-			}
-
 			$json = json_decode($response, true);
 
-			if (!is_array($json) || ($json['status'] ?? '') !== 'OK') {
-				echo "Domoticz update gaf geen OK terug voor {$update['name']} | Response: {$response}\n";
-				continue;
-			}
 		}
 	}
 
@@ -483,19 +502,12 @@
 		$json = json_encode($payload);
 
 		// === Send
-		echo "TX: $json\n";
 		socket_sendto($sock, $json, strlen($json), 0, $ip, $port);
 
 		// === Receive
 		$buf = '';
 		$from = '';
 		$portOut = 0;
-
-		if (@socket_recvfrom($sock, $buf, 2048, 0, $from, $portOut)) {
-			echo "RX: $buf\n";
-		} else {
-			echo "RX: timeout / geen response\n";
-		}
 
 		socket_close($sock);
 	}
@@ -535,19 +547,12 @@
 		$json = json_encode($payload);
 
 		// === Send
-		echo "TX: $json\n";
 		socket_sendto($sock, $json, strlen($json), 0, $ip, $port);
 
 		// === Receive
 		$buf = '';
 		$from = '';
 		$portOut = 0;
-
-		if (@socket_recvfrom($sock, $buf, 2048, 0, $from, $portOut)) {
-			echo "RX: $buf\n";
-		} else {
-			echo "RX: timeout / geen response\n";
-		}
 
 		socket_close($sock);
 	}

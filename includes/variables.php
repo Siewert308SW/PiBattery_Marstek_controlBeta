@@ -56,6 +56,9 @@
 	$marstekvarsFile        = $piBatteryPath . 'data/marstek_state.json';
 	$marstekvars            = file_exists($marstekvarsFile) ? json_decode(file_get_contents($marstekvarsFile), true) : [];
 
+// = Domoticz State File
+	$domoticzStateFile 		= $piBatteryPath . 'data/domoticz_state.json';
+	
 // = Marstek Variables
 	$marstek_Modus 	    	= $vars['marstek_Modus'] ?? null;
 	$marstek_BatModus 	    = $vars['marstek_Modus'] ?? null;
@@ -205,10 +208,4 @@
 	$ecoflowOneMax   		= ($ecoflowOneMaxOutput * 10);
 	$ecoflowTwoMax   		= ($ecoflowTwoMaxOutput * 10);
 	$marstekMax      		= ($marstekMaxOutput * 10);
-	
-// = Get status for all chargers
-	foreach ($chargers as $name => &$data) {
-		$data['status'] = getHwStatus($data['ip']);
-	}
-	unset($data);
 ?>

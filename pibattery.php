@@ -56,12 +56,12 @@
 	
 // = Determine if Charger script may execute
 	if(!$isManualRun) {
-		if (!isset($scriptTimer['lastChargerRun']) || ($timeStamp - $scriptTimer['lastChargerRun']) >= 30) {
+		if (!isset($scriptTimer['lastChargerRun']) || ($timeStamp - $scriptTimer['lastChargerRun']) >= 60) {
 			$runCharger = true;
 		}
 
 	// = Determine if Baseload script may be executed
-		if (!isset($scriptTimer['lastBaseloadRun']) || ($timeStamp - $scriptTimer['lastBaseloadRun']) >= 30) {
+		if (!isset($scriptTimer['lastBaseloadRun']) || ($timeStamp - $scriptTimer['lastBaseloadRun']) >= 20) {
 			$runBaseload = true;
 		}
 		

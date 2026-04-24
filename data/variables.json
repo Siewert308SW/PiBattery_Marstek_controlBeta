@@ -8,15 +8,15 @@
     "bmsWakeActive": false,
     "invInjection": false,
     "charge_session": {
-        "chargeStart": 2502.014,
-        "chargeCalibrated": 2494.334,
-        "dischargeStart": 2014.378
+        "chargeStart": 2529.358,
+        "chargeCalibrated": 2521.678,
+        "dischargeStart": 2035.3
     },
     "charging_loss": {
-        "chargeStart": 2502.014,
-        "dischargeStart": 2014.378
+        "chargeStart": 2529.358,
+        "dischargeStart": 2035.3
     },
-    "charger_loss_dynamic": 0.2312951095254377,
+    "charger_loss_dynamic": 0.23234562218021323,
     "oldBaseload": 0,
     "marstek_virtual_charger_power": 0
 }

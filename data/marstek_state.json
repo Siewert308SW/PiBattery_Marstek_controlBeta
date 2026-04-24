@@ -1,7 +1,7 @@
 {
-    "timeStamp": 1775515790,
-    "dateNow": "2026-04-07 00:49:50",
+    "timeStamp": 1777028815,
+    "dateNow": "2026-04-24 13:06:55",
     "marstekMode": "Passive",
-    "marstekState": "discharging",
-    "marstekSoc": 77
+    "marstekState": "idle",
+    "marstekSoc": 100
 }
