@@ -20,7 +20,7 @@
 	$batteryVolt            = 25.6;         					 // Battery Voltage
 	$batteryAh              = 300;          					 // Total Ah of all batteries
 	$batteryMinimum         = 15;           					 // Minimum percentage to keep in the battery, wintertime will be automaticly set to 25%
-	$marstekMinimum         = 18;
+	$marstekMinimum         = 15;
 
 	$batteryVoltMax         = 27.0; 
 	$batteryVoltTrigger     = 25.3;
@@ -31,18 +31,18 @@
 	$ecoflowTwoMaxOutput   	= 580;
 	$marstekMaxOutput      	= 800;
 	$ecoflowMinOutput      	= 120;         					     // Minimum output (Watts); the inverter is allowed to deliver
-	$ecoflowOutputOffSet   	= 1;           					 	 // Subtract this value (Watts) from the new baseload: this part is always imported from the grid to prevent injection
+	$ecoflowOutputOffSet   	= 10;           					 	 // Subtract this value (Watts) from the new baseload: this part is always imported from the grid to prevent injection
 	$ecoflowMaxInvTemp     	= 65;           					 	 // Maximum internal temperature (°C); inverter stops feeding above this temperature
 	
 // = Charger variables
-	$chargerhyst            = 150;          					 // Only turn off chargers if import exceeds this many Watts (prevents flip-flopping)
+	$chargerhyst            = 50;          					 // Only turn off chargers if import exceeds this many Watts (prevents flip-flopping)
 	$chargerWattsIdle       = 80;          					     // Standby Watts of all chargers when the batteries are full
-	$chargerPausePct        = 90;           					 // When battery has been charged 100% till what % has it to drop before charging is allowed again
+	$chargerPausePct        = 85;           					 // When battery has been charged 100% till what % has it to drop before charging is allowed again
 	$chargeSessions			= 5;                                 // How many charge session to calculate charging loss 
 	$chargerPause           = 60;          					 	 // Delay in seconds before toggling chargers (prevents flip-flops), But only if realUsage is lower then 2500w
 	
 // = Baseload variables
-	$baseloadDelta			= 30;
+	$baseloadDelta			= 20;
 	
 // = Phase protection
 	$faseProtection         = 'yes';        				     // Value 'yes' or 'no'
@@ -78,7 +78,7 @@
 		'charger1' => ['ip' => ''.$hwChargerOneIP.'', 'power' => 350, 'label' => 'one', 'master' => true, 'spare_charger' => false],
 		'charger2' => ['ip' => ''.$hwChargerTwoIP.'', 'power' => 600, 'label' => 'two', 'master' => false, 'spare_charger' => false],
 		'charger3' => ['ip' => ''.$hwChargerThreeIP.'', 'power' => 350, 'label' => 'three', 'master' => false, 'spare_charger' => false],
-		'charger4' => ['ip' => ''.$hwChargerFourIP.'', 'power' => 300, 'label' => 'four', 'master' => false, 'spare_charger' => false],
+		'charger4' => ['ip' => ''.$hwChargerFourIP.'', 'power' => 350, 'label' => 'four', 'master' => false, 'spare_charger' => false],
 	];
 
 // = Ecoflow Powerstream API variables

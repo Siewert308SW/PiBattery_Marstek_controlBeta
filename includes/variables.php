@@ -60,14 +60,14 @@
 	$domoticzStateFile 		= $piBatteryPath . 'data/domoticz_state.json';
 	
 // = Marstek Variables
-	$marstek_Modus 	    	= $vars['marstek_Modus'] ?? null;
+	//$marstek_Modus 	    	= $vars['marstek_Modus'] ?? null;
 	$marstek_BatModus 	    = $vars['marstek_Modus'] ?? null;
 	$marstek_Runtime 	    = $vars['marstek_Runtime'] ?? null;		
-	$marstekMode  			= $marstekvars['marstekMode'] ?? false;
+	//$marstekMode  			= $marstekvars['marstekMode'] ?? false;
 	$marstekBatMode  		= $marstekvars['marstekMode'] ?? false;
-	$marstekState 			= $marstekvars['marstekState'] ?? false;
+	//$marstekState 			= $marstekvars['marstekState'] ?? false;
 	$marstekBatState 		= $marstekvars['marstekState'] ?? false;
-	$marstekSoc   			= $marstekvars['marstekSoc'] ?? $marstekMinimum;
+	//$marstekSoc   			= $marstekvars['marstekSoc'] ?? $marstekMinimum;
 	$marstekBatSoc   	    = $marstekvars['marstekSoc'] ?? $marstekMinimum;
 	
 	$hwMarstekSocket = getHwData($hwMarstekIP);

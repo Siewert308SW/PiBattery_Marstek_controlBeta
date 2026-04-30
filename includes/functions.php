@@ -495,7 +495,7 @@
 					"mode" => "Passive",
 					"passive_cfg" => [
 						"power" => $watts,
-						"cd_time" => 600
+						"cd_time" => 900
 					]
 				]
 			]
@@ -540,7 +540,7 @@
 					"mode" => "Passive",
 					"passive_cfg" => [
 						"power" => -abs($watts),
-						"cd_time" => 600
+						"cd_time" => 900
 					]
 				]
 			]

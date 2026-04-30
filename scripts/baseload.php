@@ -199,7 +199,7 @@
 		if($hwP1Usage >= 0){
 		$updateNeeded = ($delta > ($baseloadDelta * 10));
 		} elseif($hwP1Usage < 0){
-		$updateNeeded = ($delta > (5 * 10));
+		$updateNeeded = ($delta > (10 * 10));
 		}
 	}
 	
