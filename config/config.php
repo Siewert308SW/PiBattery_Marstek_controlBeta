@@ -30,23 +30,22 @@
 	$ecoflowOneMaxOutput   	= 580;
 	$ecoflowTwoMaxOutput   	= 580;
 	$marstekMaxOutput      	= 800;
-	$ecoflowMinOutput      	= 120;         					     // Minimum output (Watts); the inverter is allowed to deliver
-	$ecoflowOutputOffSet   	= 10;           					 	 // Subtract this value (Watts) from the new baseload: this part is always imported from the grid to prevent injection
+	$ecoflowMinOutput      	= 100;         					     // Minimum output (Watts); the inverter is allowed to deliver
 	$ecoflowMaxInvTemp     	= 65;           					 	 // Maximum internal temperature (°C); inverter stops feeding above this temperature
 	
 // = Charger variables
-	$chargerhyst            = 50;          					 // Only turn off chargers if import exceeds this many Watts (prevents flip-flopping)
+	$chargerhyst            = 150;          					 	 // Only turn off chargers if import exceeds this many Watts (prevents flip-flopping)
 	$chargerWattsIdle       = 80;          					     // Standby Watts of all chargers when the batteries are full
-	$chargerPausePct        = 85;           					 // When battery has been charged 100% till what % has it to drop before charging is allowed again
-	$chargeSessions			= 5;                                 // How many charge session to calculate charging loss 
+	$chargerPausePct        = 90;           					 // When battery has been charged 100% till what % has it to drop before charging is allowed again
+	$chargeSessions			= 15;                                // How many charge session to calculate charging loss 
 	$chargerPause           = 60;          					 	 // Delay in seconds before toggling chargers (prevents flip-flops), But only if realUsage is lower then 2500w
 	
 // = Baseload variables
-	$baseloadDelta			= 20;
+	$baseloadDelta			= 10;
 	
 // = Phase protection
 	$faseProtection         = 'yes';        				     // Value 'yes' or 'no'
-	$maxFaseWatts           = 4500;         				     // If 'yes' whats the max Watts to guard, all chargers are turned off to prevent overloading
+	$maxFaseWatts           = 5000;         				     // If 'yes' whats the max Watts to guard, all chargers are turned off to prevent overloading
 	$fase                   = 1; 
 	$fase2                  = 2; 
 	$fase3                  = 3;
@@ -78,7 +77,7 @@
 		'charger1' => ['ip' => ''.$hwChargerOneIP.'', 'power' => 350, 'label' => 'one', 'master' => true, 'spare_charger' => false],
 		'charger2' => ['ip' => ''.$hwChargerTwoIP.'', 'power' => 600, 'label' => 'two', 'master' => false, 'spare_charger' => false],
 		'charger3' => ['ip' => ''.$hwChargerThreeIP.'', 'power' => 350, 'label' => 'three', 'master' => false, 'spare_charger' => false],
-		'charger4' => ['ip' => ''.$hwChargerFourIP.'', 'power' => 350, 'label' => 'four', 'master' => false, 'spare_charger' => false],
+		'charger4' => ['ip' => ''.$hwChargerFourIP.'', 'power' => 300, 'label' => 'four', 'master' => false, 'spare_charger' => false],
 	];
 
 // = Ecoflow Powerstream API variables

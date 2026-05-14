@@ -35,7 +35,7 @@
 // = Set Marstek charging pause when battery charged 100%
 // = -------------------------------------------------	
 // === Set Pause including failsave due to buggy Marstek API
-	if (!$isManualRun && (($vars['pauseMarstekCharging'] ?? false) !== true) && $marstekBatSoc == 100 && $marstekBatMode == 'Passive' && $marstekBatState == 'idle') {
+	if (!$isManualRun && (($vars['pauseMarstekCharging'] ?? false) !== true) && $marstekBatSoc >= 99 && $hwMarstekSocket >= 0 && $hwMarstekSocket < 15) {
 		$vars['pauseMarstekCharging'] = true;
 		$varsChanged = true;
 		setMarstekUsage(0);
@@ -178,20 +178,18 @@
 // = -------------------------------------------------
 // = Keep chargers OFF #failsaves
 // = -------------------------------------------------
-	$highConsumption = ($realUsage > 2500 && $hwChargerUsage == 0 && $hwSolarReturn > -3500);
+	//$highConsumption = ($realUsage > 2000 && $hwChargersUsage == 0 && $pauseMarstekCharging);
 	$charged		 = ($pauseCharging && $pauseMarstekCharging);
 	
 	if (
 		!$keepChargersOff &&
 		(
 			$faseProtect ||
-			$marstekBatMode == 'Auto' ||
 			$hwInvReturn < 0 ||
-			$hwSolarReturn >= 0 ||
 			isset($vars['battery_awaitingCalibration']) ||
 			$battery_calibrated || 
 			$chargeLossCalculation ||
-			$highConsumption ||
+			//$highConsumption ||
 			$charged
 		)
 	) {
@@ -201,13 +199,11 @@
 	} elseif (
 		$keepChargersOff &&
 		!$faseProtect &&
-		$marstekBatMode == 'Passive' &&
 		$hwInvReturn == 0 &&
-		$hwSolarReturn < -300 &&
 		!isset($vars['battery_awaitingCalibration']) &&
 		!$battery_calibrated && 
 		!$chargeLossCalculation &&
-		!$highConsumption &&
+		//!$highConsumption &&
 		!$charged
 	) {
 		$vars['keepChargersOff'] = false;
@@ -229,21 +225,23 @@
 	unset($data);
 
 // = -------------------------------------------------
-// = Determine available PV surplus
+// = Determine available PV surplus  - $chargerhyst
 // = -------------------------------------------------
 	$grossAvailableSolarPower = 0;
-
-	if (!$keepChargersOff && $P1ChargerUsage < 0) {
-		$grossAvailableSolarPower = max(0, abs($P1ChargerUsage) - $chargerhyst);
+	
+	if ($hwChargerUsage == 0) {
+	$grossAvailableSolarPower = max(0, -$P1ChargerUsage - $chargerhyst);		
+	} elseif ($hwChargerUsage > 0) {
+	$grossAvailableSolarPower = max(0, -$P1ChargerUsage - 50);		
 	}
 
 // = -------------------------------------------------
 // = Marstek virtual charger (dynamic priority charger)
 // = -------------------------------------------------
 	$marstekVirtualChargerTarget   = 0;
-	$marstekVirtualChargerMin      = 150;
-	$marstekVirtualChargerMax      = 2500;
-	$marstekVirtualChargerDelta    = 25;
+	$marstekVirtualChargerMin      = 100;
+	$marstekVirtualChargerMax      = 2000;
+	$marstekVirtualChargerDelta    = 100;
 	$marstekVirtualChargerPower    = (int)($vars['marstek_virtual_charger_power'] ?? 0);
 	$marstekAvailableForChargers   = $grossAvailableSolarPower;
 
@@ -253,32 +251,24 @@
 		}
 	}
 
-	$marstekDelta = abs($marstekVirtualChargerTarget - $hwMarstekUsage); // $marstekVirtualChargerPower
+	$marstekDelta = abs($marstekVirtualChargerTarget - $hwMarstekUsage);
 
 // === Update Marstek
 	if ($marstekDelta >= $marstekVirtualChargerDelta) {
 
 		$marstekVirtualChargerPower = $marstekVirtualChargerTarget;
-
-			if (($vars['marstek_virtual_charger_power'] ?? null) !== $marstekVirtualChargerPower) {
-				$vars['marstek_virtual_charger_power'] = $marstekVirtualChargerPower;
-				$varsChanged = true;
-			}
 			
 		if (!$isManualRun && !$keepChargersOff && !$pauseMarstekCharging && !$bmsWakeActive) {
 			setMarstekUsage($marstekVirtualChargerPower);
-
-		} else {
-			debugMsg("Marstek virtual charger niet gestuurd: keepChargersOff={$keepChargersOff}, pauseMarstekCharging={$pauseMarstekCharging}, bmsWakeActive={$bmsWakeActive}");
 		}
 	}
 
 // === Use actual/applied Marstek power for remaining solar
-	$marstekAvailableForChargers = max(0, $grossAvailableSolarPower - $hwMarstekUsage); //$marstekVirtualChargerPower
-	if (!$pauseMarstekCharging){
-	$availableSolarPower = 0;		
-	} else {		
+	$marstekAvailableForChargers = max(0, $grossAvailableSolarPower - $hwMarstekUsage);
+	if ($pauseMarstekCharging) {		
 	$availableSolarPower = $marstekAvailableForChargers;
+	} else {		
+	$availableSolarPower = 0;
 	}
 	
 	if ($debug == 'yes' && $isManualRun && !$bmsWakeActive) {
@@ -380,17 +370,17 @@
 	}
 
 // = -------------------------------------------------	
-// = Check if toggling chargers is upscale or downscale
+// = Check if toggling chargers is upscale or downscale  && $currentTotal > 0  && $currentTotal > 0
 // = -------------------------------------------------
 	$isUpscaling 		= ($bestTotal > $currentTotal);
-	$isDownscaling 		= ($bestTotal < $currentTotal && $currentTotal > 0);	
+	$isDownscaling 		= ($bestTotal < $currentTotal);
+	$isMinimumCombi 	= empty($bestCombi) || $bestCombi === [$masterName];
 	$currentPendingType = null;
-	$isNoCombi 			= (empty($bestCombi) && $hwP1Usage > $currentTotal);
-	
+
 	if ($isUpscaling) {
 		$currentPendingType = 'upscale';
-
-	} elseif ($isDownscaling && !$isNoCombi) {
+		
+	} elseif ($isDownscaling) {
 		$currentPendingType = 'downscale';
 	}
 		

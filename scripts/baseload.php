@@ -26,7 +26,7 @@
 // = Calculate new baseload
 // = -------------------------------------------------
 	if ($hwP1Usage < $totalMaxOutput){
-		$newBaseloadRef = round(min($totalMaxOutput, max(0, ($hwP1Usage + $currentBaseload - $ecoflowOutputOffSet))) * 10);
+		$newBaseloadRef = round(min($totalMaxOutput, max(0, ($hwP1Usage + $currentBaseload))) * 10);
 	} elseif ($hwP1Usage >= $totalMaxOutput){
 		$newBaseloadRef = round($totalMaxOutput * 10);
 	}
@@ -167,12 +167,6 @@
 		debugMsg('Ontladen geblokkeerd: Vraag is minder dan minimale ontlading');
 	}
 
-// === Set baseload to null if marstek battery is not in Passive Mode
-	if ($marstekBatMode == 'Auto' || $marstek_BatModus == 'Auto') {
-		$forceBaseloadNull = true;
-		debugMsg('Ontladen geblokkeerd: Marstek in AUTO Mode');
-	}
-
 // Set Baseload null when inverters aren't online
 	if ($hwInvOneStatus == 'Off' || $hwInvTwoStatus == 'Off' || $hwMarstekStatus == 'Off'){
 		$forceBaseloadNull = true;
@@ -192,14 +186,15 @@
 // = Check if baseload needs to be updated
 // = -------------------------------------------------
 	$updateNeeded = false;
-		
+	//$updateAllowed = true;
+	
 	$delta = abs($newBaseload - abs($hwInvReturn * 10));
 
 	if ($forceBaseloadNull == false) {
-		if($hwP1Usage >= 0){
-		$updateNeeded = ($delta > ($baseloadDelta * 10));
-		} elseif($hwP1Usage < 0){
+		if($hwP1Usage > 0){
 		$updateNeeded = ($delta > (10 * 10));
+		} elseif($hwP1Usage <= 0){
+		$updateNeeded = ($delta > (20 * 10));
 		}
 	}
 	
@@ -211,7 +206,7 @@
 		$ecoflow->setDeviceFunction($ecoflowOneSerialNumber,'WN511_SET_PERMANENT_WATTS_PACK',['permanent_watts' => $invOneBaseload]);
 		sleep(3);
 		$ecoflow->setDeviceFunction($ecoflowTwoSerialNumber,'WN511_SET_PERMANENT_WATTS_PACK',['permanent_watts' => $invTwoBaseload]);
-		sleep(2);
+		sleep(1);
 		setMarstekReturn(($marstekBaseload / 10));
 	
 // === Set new baseload variable
@@ -233,7 +228,7 @@
 		$ecoflow->setDeviceFunction($ecoflowOneSerialNumber, 'WN511_SET_PERMANENT_WATTS_PACK', ['permanent_watts' => 0]);
 		sleep(3);
 		$ecoflow->setDeviceFunction($ecoflowTwoSerialNumber, 'WN511_SET_PERMANENT_WATTS_PACK', ['permanent_watts' => 0]);
-		sleep(2);
+		sleep(1);
 		setMarstekReturn(0);
 		}
 		

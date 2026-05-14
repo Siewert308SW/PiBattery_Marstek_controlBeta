@@ -5,19 +5,8 @@
 //                           Helpers                             //
 // **************************************************************//
 //
-	
-// = -------------------------------------------------	
-// = EcoFlow Fan On/Off 
-// = -------------------------------------------------
-	//if ($runCharger && !$isManualRun){
-	//	if ($hwInvFanStatus == 'Off' && $invTemp >= 35){
-	//		switchHwSocket('fan','On');
-	//	} elseif ($hwInvFanStatus == 'On' && $invTemp < 30){
-	//		switchHwSocket('fan','Off');
-	//	}
-	//}
 
-	if ($runBaseload && $isManualRun){
+	if ($runCharger && $isManualRun){
 // = -------------------------------------------------
 // = Fase Protection
 // = -------------------------------------------------
@@ -68,11 +57,10 @@
 	}
 	
 // = -------------------------------------------------	
-// = Estimated charge/discharge time  || $runCharger
+// = Estimated charge time  || $runCharger
 // = -------------------------------------------------
 
-	if ($runBaseload || $isManualRun){
-// === ChargeTime till 100%
+// === piBattery ChargeTime till 100%
 		if ($hwChargersUsage > 0 && $batteryPct < 100) {
 			$currentWh = ($batteryPct / 100) * $batteryCapacityWh;
 				
@@ -82,17 +70,7 @@
 			$realChargeTime = convertTime($chargeTime);
 			
 		}
-
-// === DischargeTime till minimum-SOC
-		if ($hwInvsReturn < 0 && $batteryPct > $batteryMinimum) {
-			$currentWh = ($batteryPct / 100) * $batteryCapacityWh;
-				
-			$minWh = ($batteryMinimum / 100) * $batteryCapacityWh;
-			$availableWh = $currentWh - $minWh;
-			$dischargeTime = $availableWh / abs($hwInvsReturn);
-			$realDischargeTime = convertTime($dischargeTime);
-		}
-
+		
 // === Marstek ChargeTime till 100%
 		if ($hwMarstekUsage > 0 && $marstekBatSoc < 100) {
 			$currentMarstekWh = ($marstekBatSoc / 100) * $marstekCapacityWh;
@@ -102,6 +80,20 @@
 			$chargeMarstekTime = $neededMarstekWhAdjusted / $hwMarstekUsage;
 			$realMarstekChargeTime = convertTime($chargeMarstekTime);
 			
+		}
+
+// = -------------------------------------------------	
+// = Estimated discharge time  || $runCharger
+// = -------------------------------------------------
+		
+// === piBattery DischargeTime till minimum-SOC
+		if ($hwInvsReturn < 0 && $batteryPct > $batteryMinimum) {
+			$currentWh = ($batteryPct / 100) * $batteryCapacityWh;
+				
+			$minWh = ($batteryMinimum / 100) * $batteryCapacityWh;
+			$availableWh = $currentWh - $minWh;
+			$dischargeTime = $availableWh / abs($hwInvsReturn);
+			$realDischargeTime = convertTime($dischargeTime);
 		}
 		
 // === Marstek DischargeTime till minimum-SOC
@@ -113,7 +105,6 @@
 			$dischargeMarstekTime = $availableMarstekWh / abs($hwMarstekReturn);
 			$realMarstekDischargeTime = convertTime($dischargeMarstekTime);
 		}
-	}
 
 // = -------------------------------------------------	
 // = PushUpdate to Domoticz
@@ -138,31 +129,39 @@
 
 		if (UpdateDomoticzDeviceIfChanged($marstekOutputCounterIDX, ''.$hwMarstekReturn.'') == 'OK') usleep(100000);
 
-		if ($hwChargersUsage > 15 && $batteryPct < 100) {
-		if (UpdateDomoticzDeviceIfChanged($batteryChargeTimeIDX, ''.$realChargeTime.'') == 'OK') usleep(100000);
-		
+// = -------------------------------------------------	
+
+		if ($hwChargersUsage > 10 && $batteryPct < 100) {
+			if (UpdateDomoticzDeviceIfChanged($batteryChargeTimeIDX, ''.$realChargeTime.'') == 'OK') usleep(100000);
 		} else {
-		if (UpdateDomoticzDeviceIfChanged($batteryChargeTimeIDX, '00:00') == 'OK') usleep(100000);
+			if (UpdateDomoticzDeviceIfChanged($batteryChargeTimeIDX, '00:00') == 'OK') usleep(100000);
 		}
 
-		if ($hwInvsReturn <= -15 && $batteryPct > 0) {
-		if (UpdateDomoticzDeviceIfChanged($batteryDischargeTimeIDX, ''.$realDischargeTime.'') == 'OK') usleep(100000);
+// = -------------------------------------------------	
+
+		if ($hwInvsReturn < 0 && $batteryPct > $batteryMinimum) {
+			if (UpdateDomoticzDeviceIfChanged($batteryDischargeTimeIDX, ''.$realDischargeTime.'') == 'OK') usleep(100000);
 		} else {
-		if (UpdateDomoticzDeviceIfChanged($batteryDischargeTimeIDX, '00:00') == 'OK') usleep(100000);
+			if (UpdateDomoticzDeviceIfChanged($batteryDischargeTimeIDX, '00:00') == 'OK') usleep(100000);
 		}
 
-		if ($hwMarstekSocket > 15 && $marstekBatSoc < 100) {
-		if (UpdateDomoticzDeviceIfChanged($marstekChargeTimeIDX, ''.$realMarstekChargeTime.'') == 'OK') usleep(100000);
-		
+// = -------------------------------------------------	
+
+		if ($hwMarstekUsage > 10 && $marstekBatSoc < 100) {
+			if (UpdateDomoticzDeviceIfChanged($marstekChargeTimeIDX, ''.$realMarstekChargeTime.'') == 'OK') usleep(100000);
 		} else {
-		if (UpdateDomoticzDeviceIfChanged($marstekChargeTimeIDX, '00:00') == 'OK') usleep(100000);
+			if (UpdateDomoticzDeviceIfChanged($marstekChargeTimeIDX, '00:00') == 'OK') usleep(100000);
 		}
 
-		if ($hwMarstekSocket < -15 && $marstekBatSoc > 16) {
-		if (UpdateDomoticzDeviceIfChanged($marstekDischargeTimeIDX, ''.$realMarstekDischargeTime.'') == 'OK') usleep(100000);
+// = -------------------------------------------------	
+
+		if ($hwMarstekReturn < 0 && $marstekBatSoc > $marstekMinimum) {
+			if (UpdateDomoticzDeviceIfChanged($marstekDischargeTimeIDX, ''.$realMarstekDischargeTime.'') == 'OK') usleep(100000);
 		} else {
-		if (UpdateDomoticzDeviceIfChanged($marstekDischargeTimeIDX, '00:00') == 'OK') usleep(100000);
+			if (UpdateDomoticzDeviceIfChanged($marstekDischargeTimeIDX, '00:00') == 'OK') usleep(100000);
 		}
+
+// = -------------------------------------------------	
 		
 		$chargerLossDomo = ($chargerLoss * 100);
 		if (UpdateDomoticzDeviceIfChanged($batteryRTEIDX, ''.$chargerLossDomo.'') == 'OK') usleep(100000);

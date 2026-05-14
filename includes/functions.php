@@ -304,7 +304,7 @@
 // = Send PiBattery/Marstek battery status to Domoticz
 // = -------------------------------------------------
 	function sendBatteryStatusToDomoticz() {
-		$domoticzUrl   = 'http://127.0.0.1:8080';
+		$domoticzUrl   = 'http://192.168.178.7:8080';
 		global $batteryPct;
 		global $marstekBatSoc;
 		global $marstekMaxOutput;
@@ -322,11 +322,11 @@
 		$totalMarstekPct = round(($marstekBatSoc), 0);
 		
 // === Calculate total injection		
-		if ($marstekBatSoc > 35) {
+		if ($marstekBatSoc > 45) {
 			$totalDischargeMarstek = $marstekMaxOutput;
 		}
 
-		if ($batteryPct > 35) {
+		if ($batteryPct > 45) {
 			$totalDischargePiBattery = $ecoflowOneMaxOutput + $ecoflowTwoMaxOutput;
 		}
 
@@ -385,298 +385,26 @@
 		}
 	}
 
-// = -------------------------------------------------
-// = Marstek Set Mode
-// = -------------------------------------------------
-	function setMarstekMode($action) {
-		global $marstekIP, $marstekPort;
-		$ip   = $marstekIP;
-		$port = $marstekPort;
-		$timeout 	= 3;
-
-		$sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-		if ($sock === false) {
-			return false;
-		}
-
-		socket_set_option($sock, SOL_SOCKET, SO_RCVTIMEO, [
-			'sec'  => $timeout,
-			'usec' => 0
-		]);
-
-		if ($action == 'stop') {
-			$payload = [
-				'id' 	 => 200,
-				'method' => 'ES.SetMode',
-				'params' => [
-					'id' 	 => 0,
-					'config' => [
-						'mode' => 'Passive',
-						'passive_cfg' => [
-							'power'   => 0,
-							'cd_time' => 1
-						]
-					]
-				]
-			];
-
-		} elseif ($action == 'auto') {
-			$payload = [
-				'id' 	 => 201,
-				'method' => 'ES.SetMode',
-				'params' => [
-					'id' 	 => 0,
-					'config' => [
-						'mode' => 'Auto',
-						'auto_cfg' => [
-							'enable' => 1
-						]
-					]
-				]
-			];
-
-		} else {
-			socket_close($sock);
-			return false;
-		}
-
-		$json = json_encode($payload);
-
-		socket_sendto($sock, $json, strlen($json), 0, $ip, $port);
-
-		$buf 	 = '';
-		$from 	 = '';
-		$portOut = 0;
-
-		$result = @socket_recvfrom($sock, $buf, 2048, 0, $from, $portOut);
-
-		socket_close($sock);
-
-		if ($result === false || empty($buf)) {
-			return false;
-		}
-
-		$response = json_decode($buf, true);
-
-		if (!is_array($response)) {
-			return false;
-		}
-
-		if (isset($response['result']['set_result']) && $response['result']['set_result'] == true) {
-			return true;
-		}
-
-		return false;
-	}
-
 // = -------------------------------------------------	
 // = Marstek Set Return Power
 // = -------------------------------------------------
 	function setMarstekReturn($watts) {
-		global $marstekIP, $marstekPort;
-		$ip   = $marstekIP;
-		$port = $marstekPort;
-		$timeout = 3;
+		global $marstekIP;
 
-		// === UDP socket
-		$sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-		socket_set_option($sock, SOL_SOCKET, SO_RCVTIMEO, [
-			"sec"  => $timeout,
-			"usec" => 0
-		]);
+		$marstek = new MarstekModbus($marstekIP);
 
-		// === Payload
-		$payload = [
-			"id" => 200,
-			"method" => "ES.SetMode",
-			"params" => [
-				"id" => 0,
-				"config" => [
-					"mode" => "Passive",
-					"passive_cfg" => [
-						"power" => $watts,
-						"cd_time" => 900
-					]
-				]
-			]
-		];
-
-		$json = json_encode($payload);
-
-		// === Send
-		socket_sendto($sock, $json, strlen($json), 0, $ip, $port);
-
-		// === Receive
-		$buf = '';
-		$from = '';
-		$portOut = 0;
-
-		socket_close($sock);
+		return $marstek->setDischargePower((int)$watts);
 	}
-
+	
 // = -------------------------------------------------	
 // = Marstek Set Charge Power
 // = -------------------------------------------------
 	function setMarstekUsage($watts) {
-		global $marstekIP, $marstekPort;
-		$ip   = $marstekIP;
-		$port = $marstekPort;
-		$timeout = 3;
+		global $marstekIP;
 
-		// === UDP socket
-		$sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-		socket_set_option($sock, SOL_SOCKET, SO_RCVTIMEO, [
-			"sec"  => $timeout,
-			"usec" => 0
-		]);
+		$marstek = new MarstekModbus($marstekIP);
 
-		// === Payload
-		$payload = [
-			"id" => 200,
-			"method" => "ES.SetMode",
-			"params" => [
-				"id" => 0,
-				"config" => [
-					"mode" => "Passive",
-					"passive_cfg" => [
-						"power" => -abs($watts),
-						"cd_time" => 900
-					]
-				]
-			]
-		];
-
-		$json = json_encode($payload);
-
-		// === Send
-		socket_sendto($sock, $json, strlen($json), 0, $ip, $port);
-
-		// === Receive
-		$buf = '';
-		$from = '';
-		$portOut = 0;
-
-		socket_close($sock);
-	}
-	
-// = -------------------------------------------------
-// = Marstek UDP helper
-// = -------------------------------------------------
-	function marstekUdpCall($ip, $port, $method, $requestId = 1, $timeout = 2) {
-		$socket = @socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-		if ($socket === false) {
-			return false;
-		}
-
-		socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, [
-			'sec'  => $timeout,
-			'usec' => 0
-		]);
-
-		$payload = json_encode([
-			'id'     => $requestId,
-			'method' => $method,
-			'params' => ['id' => 0]
-		], JSON_UNESCAPED_SLASHES);
-
-		if ($payload === false) {
-			socket_close($socket);
-			return false;
-		}
-
-		$sent = @socket_sendto($socket, $payload, strlen($payload), 0, $ip, $port);
-		if ($sent === false) {
-			socket_close($socket);
-			return false;
-		}
-
-		$buffer = '';
-		$from   = '';
-		$portIn = 0;
-
-		$bytes = @socket_recvfrom($socket, $buffer, 65535, 0, $from, $portIn);
-		socket_close($socket);
-
-		if ($bytes === false || empty($buffer)) {
-			return false;
-		}
-
-		$data = json_decode($buffer, true);
-		if (!is_array($data) || isset($data['error'])) {
-			return false;
-		}
-
-		return $data;
-	}
-
-// = -------------------------------------------------
-// = Marstek get state helper
-// = -------------------------------------------------
-	function getMarstekData($forceRefresh = false) {
-		global $piBatteryPath, $marstekIP, $marstekPort, $hwMarstekSocket;
-
-		$cacheFile = $piBatteryPath . 'data/marstek_state.json';
-		$cacheTtl  = 5;
-
-		if (!$forceRefresh && file_exists($cacheFile)) {
-			$cached = json_decode(file_get_contents($cacheFile), true);
-
-			if (
-				is_array($cached) &&
-				isset($cached['timeStamp']) &&
-				(time() - (int)$cached['timeStamp']) < $cacheTtl
-			) {
-				return $cached;
-			}
-		}
-
-		$prev = [];
-		if (file_exists($cacheFile)) {
-			$prev = json_decode(file_get_contents($cacheFile), true);
-			if (!is_array($prev)) {
-				$prev = [];
-			}
-		}
-
-		$modeResponse   = marstekUdpCall($marstekIP, $marstekPort, 'ES.GetMode', 101, 2);
-		usleep(300000);
-		$statusResponse = marstekUdpCall($marstekIP, $marstekPort, 'ES.GetStatus', 102, 2);
-
-		$modeResult   = $modeResponse['result'] ?? [];
-		$statusResult = $statusResponse['result'] ?? [];
-
-		$marstekMode = $modeResult['mode'] ?? ($prev['marstekMode'] ?? 'unknown');
-
-		$marstekSoc = null;
-		if (isset($statusResult['bat_soc']) && is_numeric($statusResult['bat_soc'])) {
-			$marstekSoc = round((float)$statusResult['bat_soc'], 1);
-		} elseif (isset($modeResult['bat_soc']) && is_numeric($modeResult['bat_soc'])) {
-			$marstekSoc = round((float)$modeResult['bat_soc'], 1);
-		} else {
-			$marstekSoc = $prev['marstekSoc'] ?? null;
-		}
-
-		if ($hwMarstekSocket >= 0 && $hwMarstekSocket < 10) {
-			$marstekState = 'idle';
-		} elseif ($hwMarstekSocket >= 10) {
-			$marstekState = 'charging';
-		} elseif ($hwMarstekSocket < 0) {
-			$marstekState = 'discharging';
-		} else {
-			$marstekState = 'unknown';
-		}
-
-		$data = [
-			'timeStamp'    => time(),
-			'dateNow'      => date('Y-m-d H:i:s'),
-			'marstekMode'  => $marstekMode,
-			'marstekState' => $marstekState,
-			'marstekSoc'   => $marstekSoc
-		];
-
-		writeJsonLocked($cacheFile, $data);
-
-		return $data;
+		return $marstek->setChargePower((int)$watts);
 	}
 	
 // = -------------------------------------------------

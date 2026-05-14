@@ -10,6 +10,10 @@
 	$ecoflow 				= new EcoFlowAPI(''.$ecoflowAccessKey.'', ''.$ecoflowSecretKey.'');
 	$invOne 				= $ecoflow->getDevice($ecoflowOneSerialNumber);
 	$invTwo 				= $ecoflow->getDevice($ecoflowTwoSerialNumber);
+
+// = Get Marstek V3 data
+	$marstek 				= new MarstekModbus($marstekIP);
+	$marstekData 			= $marstek->getData();
 	
 // = php.ini
 	date_default_timezone_set(''.$timezone.'');
@@ -51,24 +55,17 @@
 	$chargerLockFile        = $piBatteryPath . 'data/chargerLocked.json';
 	$chargerLockFileVars    = file_exists($chargerLockFile) ? json_decode(file_get_contents($chargerLockFile), true) : [];
 	$chargerLock 	  		= $chargerLockFileVars['chargerLocked'] ?? false;
-	
-// = Marstek Get Variables
-	$marstekvarsFile        = $piBatteryPath . 'data/marstek_state.json';
-	$marstekvars            = file_exists($marstekvarsFile) ? json_decode(file_get_contents($marstekvarsFile), true) : [];
 
 // = Domoticz State File
 	$domoticzStateFile 		= $piBatteryPath . 'data/domoticz_state.json';
 	
 // = Marstek Variables
-	//$marstek_Modus 	    	= $vars['marstek_Modus'] ?? null;
-	$marstek_BatModus 	    = $vars['marstek_Modus'] ?? null;
-	$marstek_Runtime 	    = $vars['marstek_Runtime'] ?? null;		
-	//$marstekMode  			= $marstekvars['marstekMode'] ?? false;
-	$marstekBatMode  		= $marstekvars['marstekMode'] ?? false;
-	//$marstekState 			= $marstekvars['marstekState'] ?? false;
-	$marstekBatState 		= $marstekvars['marstekState'] ?? false;
-	//$marstekSoc   			= $marstekvars['marstekSoc'] ?? $marstekMinimum;
-	$marstekBatSoc   	    = $marstekvars['marstekSoc'] ?? $marstekMinimum;
+	$marstekBatVolt 		= $marstekData['batteryVoltage'];
+	$marstekBatState 		= $marstekData['inverterState'];
+	$marstekBatSoc   	    = $marstekData['batterySoc'];
+	$marstekAcPower		    = $marstekData['acPower'];
+	$marstekState		    = $marstekData['inverterState'];
+	$marstekTemp		    = $marstekData['batteryTemp'];
 	
 	$hwMarstekSocket = getHwData($hwMarstekIP);
 	if ($hwMarstekSocket >= 0 && $hwMarstekSocket <= 10) {
@@ -155,6 +152,7 @@
 // = Various
 	$pauseUntil       		= $vars['charger_pause_until'] ?? 0;
 	$pendingSwitch 	  		= $vars['charger_pending_switch'] ?? false;
+	$baseloadPendingSwitch 	= $vars['baseloading_pending_switch'] ?? false;
 	$charger_pending_type 	= $vars['charger_pending_type'] ?? null;
 	$chargerLoss 			= round($vars['charger_loss_dynamic'] ?? 0.22524337035732608, 7);	
 	$pauseCharging 			= $vars['pauseCharging'] ?? false;

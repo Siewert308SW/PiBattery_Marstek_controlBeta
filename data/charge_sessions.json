@@ -1,27 +1,57 @@
 [
     {
-        "charged": 5.537,
-        "discharged": 4.281,
-        "loss": 0.2268376
+        "charged": 4.878,
+        "discharged": 3.756,
+        "loss": 0.2300123
     },
     {
-        "charged": 3.834,
-        "discharged": 2.895,
-        "loss": 0.2449139
+        "charged": 2.986,
+        "discharged": 2.237,
+        "loss": 0.2508372
     },
     {
-        "charged": 13.153,
-        "discharged": 9.849,
-        "loss": 0.2511974
+        "charged": 1.623,
+        "discharged": 1.266,
+        "loss": 0.219963
     },
     {
-        "charged": 6.496,
-        "discharged": 5.096,
-        "loss": 0.2155172
+        "charged": 13.326,
+        "discharged": 9.844,
+        "loss": 0.2612937
     },
     {
-        "charged": 7.695,
-        "discharged": 5.977,
-        "loss": 0.2232619
+        "charged": 4.935,
+        "discharged": 3.853,
+        "loss": 0.2192503
+    },
+    {
+        "charged": 0.792,
+        "discharged": 0.594,
+        "loss": 0.25
+    },
+    {
+        "charged": 3.348,
+        "discharged": 2.572,
+        "loss": 0.2317802
+    },
+    {
+        "charged": 0.264,
+        "discharged": 0.172,
+        "loss": 0.3484848
+    },
+    {
+        "charged": 3.864,
+        "discharged": 2.947,
+        "loss": 0.2373188
+    },
+    {
+        "charged": 0.657,
+        "discharged": 0.502,
+        "loss": 0.2359209
+    },
+    {
+        "charged": 4.546,
+        "discharged": 3.493,
+        "loss": 0.2316322
     }
 ]

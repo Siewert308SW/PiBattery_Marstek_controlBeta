@@ -38,9 +38,9 @@
 	$scriptTimer 			= [];
 	$scriptTimer 			= file_exists($varsTimerFile) ? json_decode(file_get_contents($varsTimerFile), true) : [];
 
+	$runBootstrap 			= false;
 	$runCharger 			= false;
 	$runBaseload 			= false;
-	$runMarstek 			= false;
 	$varsPiChanged 			= false;
 	$varsChanged			= false;
 	$lockChanged 			= false;
@@ -56,28 +56,28 @@
 	
 // = Determine if Charger script may execute
 	if(!$isManualRun) {
-		if (!isset($scriptTimer['lastChargerRun']) || ($timeStamp - $scriptTimer['lastChargerRun']) >= 60) {
+		if (!isset($scriptTimer['lastChargerRun']) || ($timeStamp - $scriptTimer['lastChargerRun']) >= 30) {
 			$runCharger = true;
+			$runBootstrap = true;
 		}
 
 	// = Determine if Baseload script may be executed
-		if (!isset($scriptTimer['lastBaseloadRun']) || ($timeStamp - $scriptTimer['lastBaseloadRun']) >= 20) {
+		if (!isset($scriptTimer['lastBaseloadRun']) || ($timeStamp - $scriptTimer['lastBaseloadRun']) >= 10) {
 			$runBaseload = true;
+			$runBootstrap = true;
 		}
 		
-	// = Determine if Marstek API script may be executed
-		if (!isset($scriptTimer['lastMarstekRun']) || ($timeStamp - $scriptTimer['lastMarstekRun']) >= 60) {
-			$runMarstek = true;
-		}
 	}
+
 	
 // = -------------------------------------------------
 // = Script may be executed
 // = -------------------------------------------------
-	if ($runCharger == true || $runBaseload == true || $runMarstek == true || $isManualRun) {
+	
+	if ($runBootstrap == true || $isManualRun) {
 		require_once $bootStrapFile;
 	}
-
+	
 // = Baseload script may be executed	
 	if ($runBaseload == true || $isManualRun) {
 		$scriptTimer['lastBaseloadRun'] = $timeStamp;
@@ -89,16 +89,7 @@
 	if ($runCharger == true || $isManualRun) {
 		$scriptTimer['lastChargerRun'] = $timeStamp;
 		writePiJson($varsTimerFile, $scriptTimer);
-		usleep(500000);
 		require_once $piBatteryPath . 'scripts/charge.php';
-	}
-	
-// = Marstek API script may be executed	
-	if ($runMarstek == true && !$isManualRun) {
-		$scriptTimer['lastMarstekRun'] = $timeStamp;
-		writePiJson($varsTimerFile, $scriptTimer);
-		usleep(10000000);
-		require_once $piBatteryPath . 'scripts/marstek.php';
 	}
 
 // = -------------------------------------------------
@@ -123,11 +114,13 @@
 		echo ' '.PHP_EOL;
 	
 // === Print Batterij Status		
-		echo " -/- PiBatterij @ {$batteryCapacitykWh} kWh           -\-".PHP_EOL;
+		echo " -/- PiBatterij                      -\-".PHP_EOL;
 		printRow('Batterij SOC', $batteryPct, '%');
 		printRow('Batterij voltage', $pvAvInputVoltage, 'Volt');
 		printRow('Batterij beschikbaar', round($batteryAvailable, 2), 'kWh');
 		printRow('Laad verlies (gemiddeld)',  round($chargerLoss * 100, 3), '%');
+		printRow('EcoFlow Temperatuur', $invTemp, '°C');
+		
 		if ($hwChargersUsage > 10 && $batteryPct < 100) {
 			printRow('Geschatte oplaadtijd '.round($batteryPct,0).'% > 100%', $realChargeTime, 'u/m');
 		}
@@ -138,10 +131,13 @@
 		echo ' '.PHP_EOL;
 
 // === Print Marstek Status 
-		echo " -/- Marstek @ {$marstekCapacitykWh} kWh              -\-".PHP_EOL;
+		echo " -/- Marstek                         -\-".PHP_EOL;
 		printRow('Marstek SOC', $marstekBatSoc, '%');
+		printRow('Marstek voltage', $marstekBatVolt, 'Volt');
 		printRow('Marstek beschikbaar', round($marstekAvailable, 2), 'kWh');
-
+		printRow('Laad verlies (gemiddeld)',  round($chargerLoss * 100, 3), '%');
+		printRow('Marstek Temperatuur', $marstekTemp, '°C');
+		
 		if ($hwMarstekSocket > 9 && $marstekBatSoc < 100) {
 			printRow('Geschatte oplaadtijd '.round($marstekBatSoc,0).'% > 100%', $realMarstekChargeTime, 'u/m');
 		}
@@ -158,7 +154,6 @@
 		printRow('EcoFlow #1 Output', $hwInvOneReturn, 'Watt');
 		printRow('Ecoflow #2 Output', $hwInvTwoReturn, 'Watt');
 		printRow('Marstek #1 Output', $hwMarstekReturn, 'Watt');
-		printRow('Omvormers Temperatuur', $invTemp, '°C');
 		echo ' '.PHP_EOL;
 		
 // === Print Energie Status		
@@ -198,12 +193,7 @@
 		} else {
 			echo '  ~~ Geen berichten'.PHP_EOL;	
 		}
-		
-		echo ' '.PHP_EOL;
-		echo '  ---------------------------------------------------'.PHP_EOL;
-		echo '  --                     The End                   --'.PHP_EOL;
-		echo '  ---------------------------------------------------'.PHP_EOL;
-		echo ' '.PHP_EOL;
+
 	}
 
 // = WritePiJson

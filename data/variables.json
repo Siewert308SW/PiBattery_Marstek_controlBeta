@@ -1,22 +1,22 @@
 {
     "pauseCharging": false,
-    "pauseMarstekCharging": true,
+    "pauseMarstekCharging": false,
     "forceChargeMode": false,
     "charger_pending_switch": false,
-    "keepChargersOff": false,
+    "baseloading_pending_switch": false,
+    "keepChargersOff": true,
     "faseProtect": false,
     "bmsWakeActive": false,
-    "invInjection": false,
+    "invInjection": true,
     "charge_session": {
-        "chargeStart": 2529.358,
-        "chargeCalibrated": 2521.678,
-        "dischargeStart": 2035.3
+        "chargeStart": 2636.331,
+        "chargeCalibrated": 2628.651,
+        "dischargeStart": 2117.554
     },
     "charging_loss": {
-        "chargeStart": 2529.358,
-        "dischargeStart": 2035.3
+        "chargeStart": 2636.331,
+        "dischargeStart": 2117.554
     },
-    "charger_loss_dynamic": 0.23234562218021323,
-    "oldBaseload": 0,
-    "marstek_virtual_charger_power": 0
+    "charger_loss_dynamic": 0.23627130736718094,
+    "oldBaseload": 747
 }

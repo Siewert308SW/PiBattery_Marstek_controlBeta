@@ -11,14 +11,17 @@
 
 // = 2. API Class
 	require_once __DIR__ . '/../includes/ecoflow_api_class.php';
+
+// = 3. Marstek ModBus Class
+	require_once __DIR__ . '/../includes/marstek_modbus_class.php';
 	
-// = 2. Functions
+// = 4. Functions
 	require_once __DIR__ . '/../includes/functions.php';
 
-// = 3. Variables
+// = 5. Variables
 	require_once __DIR__ . '/../includes/variables.php';
 
-// = 4. Helpers
+// = 6. Helpers
 	require_once __DIR__ . '/../includes/helpers.php';
 
 ?>
