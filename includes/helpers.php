@@ -164,8 +164,12 @@
 // = -------------------------------------------------	
 		
 		$chargerLossDomo = ($chargerLoss * 100);
-		if (UpdateDomoticzDeviceIfChanged($batteryRTEIDX, ''.$chargerLossDomo.'') == 'OK') usleep(100000);
+		if (UpdateDomoticzDeviceIfChanged($batteryRTEIDX, ''.$chargerRTE.'') == 'OK') usleep(100000);
 
+// = -------------------------------------------------	
+		
+		if (UpdateDomoticzDeviceIfChanged($marstekRTEIDX, ''.$marstekRTE.'') == 'OK') usleep(100000);
+		
 	}
 
 // = -------------------------------------------------	

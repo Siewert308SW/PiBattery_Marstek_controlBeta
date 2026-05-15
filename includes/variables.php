@@ -66,6 +66,7 @@
 	$marstekAcPower		    = $marstekData['acPower'];
 	$marstekState		    = $marstekData['inverterState'];
 	$marstekTemp		    = $marstekData['batteryTemp'];
+	$marstekRTE		    	= $marstekData['lifetimeRte'];
 	
 	$hwMarstekSocket = getHwData($hwMarstekIP);
 	if ($hwMarstekSocket >= 0 && $hwMarstekSocket <= 10) {
@@ -154,7 +155,8 @@
 	$pendingSwitch 	  		= $vars['charger_pending_switch'] ?? false;
 	$baseloadPendingSwitch 	= $vars['baseloading_pending_switch'] ?? false;
 	$charger_pending_type 	= $vars['charger_pending_type'] ?? null;
-	$chargerLoss 			= round($vars['charger_loss_dynamic'] ?? 0.22524337035732608, 7);	
+	$chargerLoss 			= round($vars['charger_loss_dynamic'] ?? 0.22524337035732608, 7);
+	$chargerRTE 			= round(100 - ($chargerLoss * 100), 1);	
 	$pauseCharging 			= $vars['pauseCharging'] ?? false;
 	$pauseMarstekCharging   = $vars['pauseMarstekCharging'] ?? false;
 	$keepChargersOff 		= $vars['keepChargersOff'] ?? false;

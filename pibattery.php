@@ -115,11 +115,12 @@
 	
 // === Print Batterij Status		
 		echo " -/- PiBatterij                      -\-".PHP_EOL;
+		printRow("Batterij actief", ($usePiBattery ? 'Ja' : 'Nee'), '');
 		printRow('Batterij SOC', $batteryPct, '%');
 		printRow('Batterij voltage', $pvAvInputVoltage, 'Volt');
 		printRow('Batterij beschikbaar', round($batteryAvailable, 2), 'kWh');
-		printRow('Laad verlies (gemiddeld)',  round($chargerLoss * 100, 3), '%');
-		printRow('EcoFlow Temperatuur', $invTemp, '°C');
+		printRow('Batterij RTE',  round($chargerRTE, 1), '%');
+		printRow('Batterij Temperatuur', $invTemp, '°C');
 		
 		if ($hwChargersUsage > 10 && $batteryPct < 100) {
 			printRow('Geschatte oplaadtijd '.round($batteryPct,0).'% > 100%', $realChargeTime, 'u/m');
@@ -127,15 +128,15 @@
 		if ($hwInvsReturn < 0 && $batteryPct > $batteryMinimum) {
 			printRow('Geschatte ontlaadtijd '.$batteryMinimum.'% < '.round($batteryPct,0).'%', $realDischargeTime, 'u/m');
 		}
-		printRow("Batterij actief", ($usePiBattery ? 'Ja' : 'Nee'), '');
 		echo ' '.PHP_EOL;
 
 // === Print Marstek Status 
 		echo " -/- Marstek                         -\-".PHP_EOL;
+		printRow("Marstek actief", ($useMarstek ? 'Ja' : 'Nee'), '');
 		printRow('Marstek SOC', $marstekBatSoc, '%');
 		printRow('Marstek voltage', $marstekBatVolt, 'Volt');
 		printRow('Marstek beschikbaar', round($marstekAvailable, 2), 'kWh');
-		printRow('Laad verlies (gemiddeld)',  round($chargerLoss * 100, 3), '%');
+		printRow('Marstek RTE',  round($marstekRTE, 1), '%');
 		printRow('Marstek Temperatuur', $marstekTemp, '°C');
 		
 		if ($hwMarstekSocket > 9 && $marstekBatSoc < 100) {
@@ -145,8 +146,7 @@
 		if ($hwMarstekSocket < 0 && $marstekBatSoc > $marstekMinimum) {
 			printRow('Geschatte ontlaadtijd '.$marstekMinimum.'% < '.round($marstekBatSoc,0).'%', $realMarstekDischargeTime, 'u/m');
 		}
-		
-		printRow("Marstek actief", ($useMarstek ? 'Ja' : 'Nee'), '');
+
 		echo ' '.PHP_EOL;
 		
 // === Print Inverter Status 

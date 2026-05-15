@@ -18,9 +18,10 @@ class MarstekModbus
 // = -------------------------------------------------
 // = Enable Control
 // = -------------------------------------------------
-	private function enableControl(): bool
+	private function enableControl(): void
 	{
-		return $this->writeHoldingRegister(42000, 21930);
+		$this->writeHoldingRegister(43000, 0);
+		$this->writeHoldingRegister(42000, 21930);
 	}
 	
 	public function __construct(string $ip, int $port = 502, int $unit = 1, int $timeout = 3)
@@ -75,6 +76,11 @@ class MarstekModbus
 		return ($value >= 2147483648) ? $value - 4294967296 : $value;
 	}
 
+	private function toUnsigned32(int $high, int $low): int
+	{
+		return ($high << 16) | $low;
+	}
+	
 	private function readHoldingRegisters(int $address, int $count = 1): ?array
 	{
 		if (!$this->connect()) {
@@ -136,6 +142,8 @@ class MarstekModbus
 			pack('n', $address) .
 			pack('n', $value);
 
+		error_log(date('H:i:s') . " MODBUS WRITE {$address}={$value}\n", 3, '/home/siewert/pibatteryMarstekModbus/data/write_debug.log');
+		
 		fwrite($this->socket, $packet);
 		$response = fread($this->socket, 256);
 
@@ -164,9 +172,25 @@ class MarstekModbus
 			'online' => false,
 		];
 
-		// = -------------------------------------------------
-		// = Battery basic data
-		// = -------------------------------------------------
+// = -------------------------------------------------
+// = Lifetime Energy / RTE
+// = -------------------------------------------------
+// 33000 Lifetime Charging Energy     uint32 /100 kWh
+// 33002 Lifetime Discharging Energy  uint32 /100 kWh
+		$lifetime = $this->readHoldingRegisters(33000, 4);
+
+		if (is_array($lifetime) && count($lifetime) >= 4) {
+			$chargeKwh    = round($this->toUnsigned32($lifetime[0], $lifetime[1]) / 100, 2);
+			$dischargeKwh = round($this->toUnsigned32($lifetime[2], $lifetime[3]) / 100, 2);
+
+			$data['lifetimeChargeKwh']    = $chargeKwh;
+			$data['lifetimeDischargeKwh'] = $dischargeKwh;
+			$data['lifetimeRte']          = ($chargeKwh > 0) ? round(($dischargeKwh / $chargeKwh) * 100, 1) : 0;
+		}
+		
+// = -------------------------------------------------
+// = Battery basic data
+// = -------------------------------------------------
 		// 34000 Battery Voltage  uint16 /100 V
 		// 34001 Battery Current  int16  /100 A
 		// 34002 Battery SOC      uint16 /10  %
@@ -186,19 +210,19 @@ class MarstekModbus
 		$data['batteryTemp']    = $this->toSigned16($bat[3]);
 		$data['batteryState']   = $bat[4];
 
-		// = -------------------------------------------------
-		// = Battery Power
-		// = -------------------------------------------------
-		// 30001 Battery Power int16 W
+// = -------------------------------------------------
+// = Battery Power
+// = -------------------------------------------------
+// 30001 Battery Power int16 W
 		$power = $this->readHoldingRegisters(30001, 1);
 
 		if (is_array($power) && count($power) >= 1) {
 			$data['batteryPower'] = $this->toSigned16($power[0]);
 		}
 
-		// = -------------------------------------------------
-		// = AC data
-		// = -------------------------------------------------
+// = -------------------------------------------------
+// = AC data
+// = -------------------------------------------------
 		// 32200 AC Voltage   uint16 /10 V
 		// 32202 AC Power     int32      W
 		// 32204 AC Frequency uint16 /10 Hz
@@ -210,10 +234,10 @@ class MarstekModbus
 			$data['acFrequency'] = round($ac[4] / 10, 1);
 		}
 
-		// = -------------------------------------------------
-		// = Inverter state
-		// = -------------------------------------------------
-		// 35100 Inverter State
+// = -------------------------------------------------
+// = Inverter state
+// = -------------------------------------------------
+// 35100 Inverter State
 		$inverterState = $this->readHoldingRegisters(35100, 1);
 
 		if (is_array($inverterState) && count($inverterState) >= 1) {
@@ -225,52 +249,80 @@ class MarstekModbus
 		return $data;
 	}
 
-	// = -------------------------------------------------
-	// = Set Charge Power
-	// = -------------------------------------------------
+// = -------------------------------------------------
+// = Start Charge Power
+// = -------------------------------------------------
+	public function startChargePower(int $watts): bool
+	{
+		$watts = abs($watts);
+
+		$this->writeHoldingRegister(43000, 0);
+		$this->writeHoldingRegister(42000, 21930);
+		$this->writeHoldingRegister(42020, $watts);
+
+		$result = $this->writeHoldingRegister(42010, 1);
+
+		$this->disconnect();
+
+		return $result;
+	}
+
+// = -------------------------------------------------
+// = Set Charge Power
+// = -------------------------------------------------
 	public function setChargePower(int $watts): bool
 	{
 		$watts = abs($watts);
+
+		$this->enableControl();
 
 		if (!$this->writeHoldingRegister(42020, $watts)) {
 			$this->disconnect();
 			return false;
 		}
 
-		$result = $this->writeHoldingRegister(42010, 1); // charge
+		$result = $this->writeHoldingRegister(42010, 1);
 
 		$this->disconnect();
 
 		return $result;
 	}
 
-	// = -------------------------------------------------
-	// = Set Discharge Power
-	// = -------------------------------------------------
+// = -------------------------------------------------
+// = Start Discharge Power
+// = -------------------------------------------------
+	public function startDischargePower(int $watts): bool
+	{
+		$watts = abs($watts);
+
+		$this->writeHoldingRegister(43000, 0);
+		$this->writeHoldingRegister(42000, 21930);
+		$this->writeHoldingRegister(42021, $watts);
+
+		$result = $this->writeHoldingRegister(42010, 2);
+
+		$this->disconnect();
+
+		return $result;
+	}
+
+// = -------------------------------------------------
+// = Set Discharge Power
+// = -------------------------------------------------
 	public function setDischargePower(int $watts): bool
 	{
 		$watts = abs($watts);
 
-		if (!$this->enableControl()) {
-			$this->disconnect();
-			return false;
-		}
-
-		if (!$this->writeHoldingRegister(42021, $watts)) {
-			$this->disconnect();
-			return false;
-		}
-
-		$result = $this->writeHoldingRegister(42010, 2); // discharge
+		$result = $this->writeHoldingRegister(42021, $watts);
 
 		$this->disconnect();
 
 		return $result;
 	}
 
-	// = -------------------------------------------------
-	// = Stop Power
-	// = -------------------------------------------------
+// = -------------------------------------------------
+// = Stop Power
+// = -------------------------------------------------
 	public function stopPower(): bool
 	{
 		$result = $this->writeHoldingRegister(42010, 0); // stop

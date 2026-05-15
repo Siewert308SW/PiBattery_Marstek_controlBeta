@@ -103,6 +103,7 @@
 	$marstekOutputCounterIDX= '161';
 	//$ecoFlowTempIDX 		= '50';
 	$batteryRTEIDX 		    = '145';
+	$marstekRTEIDX 		    = '162';
 	
 // = URLs
 	$baseUrl = 'http://'.$domoticzIP.'/json.htm?type=command&param=getdevices&rid=';
@@ -121,7 +122,8 @@
 		'inputCounterIDX'         => $baseUrl . $inputCounterIDX,
 		'marstekOutputCounterIDX' => $baseUrl . $marstekOutputCounterIDX,
 		'marstekInputCounterIDX'  => $baseUrl . $marstekInputCounterIDX,
-		'batteryRTEIDX'           => $baseUrl . $batteryRTEIDX
+		'batteryRTEIDX'           => $baseUrl . $batteryRTEIDX,
+		'marstekRTEIDX'           => $baseUrl . $marstekRTEIDX
 	];
 
 ?>

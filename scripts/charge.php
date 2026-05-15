@@ -240,7 +240,7 @@
 // = -------------------------------------------------
 	$marstekVirtualChargerTarget   = 0;
 	$marstekVirtualChargerMin      = 100;
-	$marstekVirtualChargerMax      = 2000;
+	$marstekVirtualChargerMax      = 2500;
 	$marstekVirtualChargerDelta    = 100;
 	$marstekVirtualChargerPower    = (int)($vars['marstek_virtual_charger_power'] ?? 0);
 	$marstekAvailableForChargers   = $grossAvailableSolarPower;
@@ -263,20 +263,12 @@
 		}
 	}
 
-// === Use actual/applied Marstek power for remaining solar
+// === Use actual/applied Marstek power for remaining solar 
 	$marstekAvailableForChargers = max(0, $grossAvailableSolarPower - $hwMarstekUsage);
 	if ($pauseMarstekCharging) {		
 	$availableSolarPower = $marstekAvailableForChargers;
 	} else {		
 	$availableSolarPower = 0;
-	}
-	
-	if ($debug == 'yes' && $isManualRun && !$bmsWakeActive) {
-		debugMsg("Beschikbaar overschot totaal: {$grossAvailableSolarPower}W");
-		debugMsg("Marstek target: {$marstekVirtualChargerTarget}W");
-		debugMsg("Marstek werkelijk: {$hwMarstekUsage}W");
-		debugMsg("Marstek delta: {$marstekDelta}W");
-		debugMsg("Resterend overschot voor fysieke laders: {$availableSolarPower}W");
 	}
 	
 // = -------------------------------------------------

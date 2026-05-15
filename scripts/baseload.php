@@ -26,7 +26,7 @@
 // = Calculate new baseload
 // = -------------------------------------------------
 	if ($hwP1Usage < $totalMaxOutput){
-		$newBaseloadRef = round(min($totalMaxOutput, max(0, ($hwP1Usage + $currentBaseload))) * 10);
+		$newBaseloadRef = round(min($totalMaxOutput, max(0, ($hwP1Usage + $currentBaseload + 5))) * 10);
 	} elseif ($hwP1Usage >= $totalMaxOutput){
 		$newBaseloadRef = round($totalMaxOutput * 10);
 	}
@@ -206,7 +206,7 @@
 		$ecoflow->setDeviceFunction($ecoflowOneSerialNumber,'WN511_SET_PERMANENT_WATTS_PACK',['permanent_watts' => $invOneBaseload]);
 		sleep(3);
 		$ecoflow->setDeviceFunction($ecoflowTwoSerialNumber,'WN511_SET_PERMANENT_WATTS_PACK',['permanent_watts' => $invTwoBaseload]);
-		sleep(1);
+		//sleep(1);
 		setMarstekReturn(($marstekBaseload / 10));
 	
 // === Set new baseload variable
@@ -228,7 +228,7 @@
 		$ecoflow->setDeviceFunction($ecoflowOneSerialNumber, 'WN511_SET_PERMANENT_WATTS_PACK', ['permanent_watts' => 0]);
 		sleep(3);
 		$ecoflow->setDeviceFunction($ecoflowTwoSerialNumber, 'WN511_SET_PERMANENT_WATTS_PACK', ['permanent_watts' => 0]);
-		sleep(1);
+		//sleep(1);
 		setMarstekReturn(0);
 		}
 		
@@ -237,6 +237,7 @@
 			$varsChanged = true;
 			$vars['oldBaseload'] = 0;
 			$vars['invInjection'] = false;
+			$vars['marstek_force_mode'] = '';
 		}
 	}
 

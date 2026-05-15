@@ -257,10 +257,11 @@
 	  global $pvCounterIDX;
 	  //global $ecoFlowTempIDX;
 	  global $batteryRTEIDX;
-
+	  global $marstekRTEIDX;
+	  
 	  $reply = ['status' => 'ERROR'];
 	  
-	  if ($idx == $marstekInputCounterIDX || $idx == $marstekOutputCounterIDX || $idx == $inputCounterIDX || $idx == $outputCounterIDX || $idx == $batterySOCIDX || $idx == $marstekSOCIDX || $idx == $batteryVoltageIDX || $idx == $pvCounterIDX || /*$idx == $ecoFlowTempIDX || */$idx == $batteryRTEIDX){
+	  if ($idx == $marstekInputCounterIDX || $idx == $marstekOutputCounterIDX || $idx == $inputCounterIDX || $idx == $outputCounterIDX || $idx == $batterySOCIDX || $idx == $marstekSOCIDX || $idx == $batteryVoltageIDX || $idx == $pvCounterIDX || /*$idx == $ecoFlowTempIDX || */$idx == $batteryRTEIDX || $idx == $marstekRTEIDX){
 	  $reply=json_decode(file_get_contents('http://'.$domoticzIP.'/json.htm?type=command&param=udevice&idx='.$idx.'&nvalue=0&svalue='.$cmd.';0'),true);
 	  }
 	  
@@ -390,8 +391,18 @@
 // = -------------------------------------------------
 	function setMarstekReturn($watts) {
 		global $marstekIP;
+		global $vars;
+		global $varsChanged;
 
 		$marstek = new MarstekModbus($marstekIP);
+
+		if (($vars['marstek_force_mode'] ?? '') !== 'discharge') {
+
+			$vars['marstek_force_mode'] = 'discharge';
+			$varsChanged = true;
+
+			return $marstek->startDischargePower((int)$watts);
+		}
 
 		return $marstek->setDischargePower((int)$watts);
 	}
@@ -401,8 +412,18 @@
 // = -------------------------------------------------
 	function setMarstekUsage($watts) {
 		global $marstekIP;
+		global $vars;
+		global $varsChanged;
 
 		$marstek = new MarstekModbus($marstekIP);
+
+		if (($vars['marstek_force_mode'] ?? '') !== 'charge') {
+
+			$vars['marstek_force_mode'] = 'charge';
+			$varsChanged = true;
+
+			return $marstek->startChargePower((int)$watts);
+		}
 
 		return $marstek->setChargePower((int)$watts);
 	}
