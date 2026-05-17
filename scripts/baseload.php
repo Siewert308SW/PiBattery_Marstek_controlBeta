@@ -186,17 +186,16 @@
 // = Check if baseload needs to be updated
 // = -------------------------------------------------
 	$updateNeeded = false;
-	//$updateAllowed = true;
 	
 	$delta = abs($newBaseload - abs($hwInvReturn * 10));
 
-	if ($forceBaseloadNull == false) {
+	//if ($forceBaseloadNull == false) {
 		if($hwP1Usage > 0){
-		$updateNeeded = ($delta > (10 * 10));
+		$updateNeeded = ($delta > ($baseloadPosDelta * 10));
 		} elseif($hwP1Usage <= 0){
-		$updateNeeded = ($delta > (20 * 10));
+		$updateNeeded = ($delta > ($baseloadNegDelta * 10));
 		}
-	}
+	//}
 	
 // = -------------------------------------------------	
 // = Update baseload
@@ -206,7 +205,7 @@
 		$ecoflow->setDeviceFunction($ecoflowOneSerialNumber,'WN511_SET_PERMANENT_WATTS_PACK',['permanent_watts' => $invOneBaseload]);
 		sleep(3);
 		$ecoflow->setDeviceFunction($ecoflowTwoSerialNumber,'WN511_SET_PERMANENT_WATTS_PACK',['permanent_watts' => $invTwoBaseload]);
-		//sleep(1);
+		sleep(1);
 		setMarstekReturn(($marstekBaseload / 10));
 	
 // === Set new baseload variable
@@ -222,13 +221,13 @@
 
 
 // === Force baseload null #failsave
-	} elseif ((!$isManualRun && $forceBaseloadNull == true) && ($hwInvReturn < 0 && $oldBaseload != 0)) {	
-
+	//} elseif ((!$isManualRun && $forceBaseloadNull == true) && ($hwInvReturn < 0 && $oldBaseload != 0)) {	
+	} elseif (!$isManualRun && $forceBaseloadNull == true && $hwInvReturn < -5) {	
 		if ($hwInvReturn < 0) {
 		$ecoflow->setDeviceFunction($ecoflowOneSerialNumber, 'WN511_SET_PERMANENT_WATTS_PACK', ['permanent_watts' => 0]);
 		sleep(3);
 		$ecoflow->setDeviceFunction($ecoflowTwoSerialNumber, 'WN511_SET_PERMANENT_WATTS_PACK', ['permanent_watts' => 0]);
-		//sleep(1);
+		sleep(1);
 		setMarstekReturn(0);
 		}
 		

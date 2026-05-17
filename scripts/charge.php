@@ -43,7 +43,7 @@
 	}
 	
 // === End pause
-	if (!$isManualRun && (($vars['pauseMarstekCharging'] ?? true) !== false) && $marstekBatSoc <= $chargerPausePct) { 
+	if (!$isManualRun && (($vars['pauseMarstekCharging'] ?? true) !== false) && $marstekBatSoc <= ($chargerPausePct + 5)) { 
 		$vars['pauseMarstekCharging'] = false;
 		$varsChanged = true;
 	}
@@ -178,7 +178,7 @@
 // = -------------------------------------------------
 // = Keep chargers OFF #failsaves
 // = -------------------------------------------------
-	//$highConsumption = ($realUsage > 2000 && $hwChargersUsage == 0 && $pauseMarstekCharging);
+	$highConsumption = ($hwP1Usage > $chargerBlock);
 	$charged		 = ($pauseCharging && $pauseMarstekCharging);
 	
 	if (
@@ -189,7 +189,7 @@
 			isset($vars['battery_awaitingCalibration']) ||
 			$battery_calibrated || 
 			$chargeLossCalculation ||
-			//$highConsumption ||
+			$highConsumption ||
 			$charged
 		)
 	) {
@@ -203,7 +203,7 @@
 		!isset($vars['battery_awaitingCalibration']) &&
 		!$battery_calibrated && 
 		!$chargeLossCalculation &&
-		//!$highConsumption &&
+		!$highConsumption &&
 		!$charged
 	) {
 		$vars['keepChargersOff'] = false;
@@ -232,44 +232,54 @@
 	if ($hwChargerUsage == 0) {
 	$grossAvailableSolarPower = max(0, -$P1ChargerUsage - $chargerhyst);		
 	} elseif ($hwChargerUsage > 0) {
-	$grossAvailableSolarPower = max(0, -$P1ChargerUsage - 50);		
+	$grossAvailableSolarPower = max(0, -$P1ChargerUsage);		
 	}
 
 // = -------------------------------------------------
-// = Marstek virtual charger (dynamic priority charger)
+// = Marstek dynamic charger
 // = -------------------------------------------------
-	$marstekVirtualChargerTarget   = 0;
-	$marstekVirtualChargerMin      = 100;
-	$marstekVirtualChargerMax      = 2500;
-	$marstekVirtualChargerDelta    = 100;
-	$marstekVirtualChargerPower    = (int)($vars['marstek_virtual_charger_power'] ?? 0);
-	$marstekAvailableForChargers   = $grossAvailableSolarPower;
+	$marstekChargerTarget = 0;
+	$marstekAvailableP1   = $grossAvailableSolarPower;
 
-	if (!$pauseMarstekCharging && !$bmsWakeActive) {
-		if ($grossAvailableSolarPower >= $marstekVirtualChargerMin) {
-			$marstekVirtualChargerTarget = min($marstekVirtualChargerMax, $grossAvailableSolarPower);
+	if (!$pauseMarstekCharging && !$keepChargersOff && !$bmsWakeActive) {
+		if ($grossAvailableSolarPower >= 100) {
+			$rounded = floor($grossAvailableSolarPower / 50) * 50;
+			$marstekChargerTarget = min(2500, max(100, $rounded));
 		}
 	}
+	
+	//if (!$pauseMarstekCharging && !$keepChargersOff && !$bmsWakeActive) {
+	//	if ($grossAvailableSolarPower >= 100) {
+	//		$marstekChargerTarget = min(2500, $grossAvailableSolarPower);
+	//	}
+	//}
 
-	$marstekDelta = abs($marstekVirtualChargerTarget - $hwMarstekUsage);
+	$marstekDelta = abs($marstekChargerTarget - $hwMarstekUsage);
 
-// === Update Marstek
-	if ($marstekDelta >= $marstekVirtualChargerDelta) {
-
-		$marstekVirtualChargerPower = $marstekVirtualChargerTarget;
+// === Update Marstek $vars['marstek_force_mode'] = ''; && !$keepChargersOff && !$pauseMarstekCharging && !$bmsWakeActive
+	if ($marstekDelta >= 100) {
 			
-		if (!$isManualRun && !$keepChargersOff && !$pauseMarstekCharging && !$bmsWakeActive) {
-			setMarstekUsage($marstekVirtualChargerPower);
+		if (!$isManualRun) {
+			setMarstekUsage($marstekChargerTarget);
 		}
+		
 	}
 
 // === Use actual/applied Marstek power for remaining solar 
-	$marstekAvailableForChargers = max(0, $grossAvailableSolarPower - $hwMarstekUsage);
+	$marstekAvailableP1 = max(0, $grossAvailableSolarPower - $hwMarstekUsage);
 	if ($pauseMarstekCharging) {		
-	$availableSolarPower = $marstekAvailableForChargers;
+	$availableSolarPower = $marstekAvailableP1;
 	} else {		
 	$availableSolarPower = 0;
 	}
+
+	//if ($debug == 'yes' && $isManualRun && !$bmsWakeActive) {
+	//	debugMsg("Beschikbaar overschot totaal: {$grossAvailableSolarPower}W");
+	//	debugMsg("Marstek target: {$marstekChargerTarget}W");
+	//	debugMsg("Marstek werkelijk: {$hwMarstekUsage}W");
+	//	debugMsg("Marstek delta: {$marstekDelta}W");
+	//	debugMsg("Resterend overschot voor fysieke laders: {$availableSolarPower}W");
+	//}
 	
 // = -------------------------------------------------
 // = Find master charger
@@ -362,17 +372,21 @@
 	}
 
 // = -------------------------------------------------	
-// = Check if toggling chargers is upscale or downscale  && $currentTotal > 0  && $currentTotal > 0
+// = Check if toggling chargers is upscale or downscale
 // = -------------------------------------------------
 	$isUpscaling 		= ($bestTotal > $currentTotal);
 	$isDownscaling 		= ($bestTotal < $currentTotal);
 	$isMinimumCombi 	= empty($bestCombi) || $bestCombi === [$masterName];
 	$currentPendingType = null;
 
-	if ($isUpscaling) {
+	if ($isUpscaling && $hwChargersUsage > 0) {
 		$currentPendingType = 'upscale';
 		
-	} elseif ($isDownscaling) {
+	} elseif ($isUpscaling && $hwChargersUsage == 0) {
+		$currentPendingType = 'upscale';
+		$chargerPause = ($chargerPause / 2);
+		
+	} elseif ($isDownscaling && $hwP1Usage > 0 && !$highConsumption) {
 		$currentPendingType = 'downscale';
 	}
 		

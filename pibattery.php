@@ -102,17 +102,7 @@
 		echo '  --            '.$totalCapacitykWh.' kWh Solar Storage             --'.PHP_EOL;
 		echo '  ---------------------------------------------------'.PHP_EOL;
 		echo ' '.PHP_EOL;
-
-// === Print Charger Status	
-		echo ' -/- Laders                          -\-'.PHP_EOL;
-		printRow("Lader 1 @ {$hwChargerOneUsage}W", $hwChargerOneStatus);
-		printRow("Lader 2 @ {$hwChargerTwoUsage}W", $hwChargerTwoStatus);
-		printRow("Lader 3 @ {$hwChargerThreeUsage}W", $hwChargerThreeStatus);
-		printRow("Lader 4 @ {$hwChargerFourUsage}W", $hwChargerFourStatus);
-		printRow("Marstek @ {$hwMarstekUsage}W", $hwMarstekStatus);
-		printRow('Laders verbruik', $hwChargerUsage, 'Watt');
-		echo ' '.PHP_EOL;
-	
+		
 // === Print Batterij Status		
 		echo " -/- PiBatterij                      -\-".PHP_EOL;
 		printRow("Batterij actief", ($usePiBattery ? 'Ja' : 'Nee'), '');
@@ -149,22 +139,41 @@
 
 		echo ' '.PHP_EOL;
 		
-// === Print Inverter Status 
-		echo ' -/- Omvormers                       -\-'.PHP_EOL;
-		printRow('EcoFlow #1 Output', $hwInvOneReturn, 'Watt');
-		printRow('Ecoflow #2 Output', $hwInvTwoReturn, 'Watt');
-		printRow('Marstek #1 Output', $hwMarstekReturn, 'Watt');
-		echo ' '.PHP_EOL;
-		
 // === Print Energie Status		
 		echo ' -/- Energie                         -\-'.PHP_EOL;
 		printRow('Echte verbruik', $realUsage, 'Watt');
 		printRow('P1-Meter', $hwP1Usage, 'Watt');
 		printRow('Zonnepanelen opwek', $hwSolarReturn, 'Watt');
 		printRow('Batterij opwek', $hwInvReturn, 'Watt');
-		printRow('Overschot voor de laders', $P1ChargerAvailable, 'Watt');
 		echo ' '.PHP_EOL;
 
+// === Print Charger Status	
+		echo ' -/- Laden                           -\-'.PHP_EOL;
+		printRow("Lader 1 @ {$hwChargerOneUsage}W", $hwChargerOneStatus);
+		printRow("Lader 2 @ {$hwChargerTwoUsage}W", $hwChargerTwoStatus);
+		printRow("Lader 3 @ {$hwChargerThreeUsage}W", $hwChargerThreeStatus);
+		printRow("Lader 4 @ {$hwChargerFourUsage}W", $hwChargerFourStatus);
+		printRow("Marstek @ {$hwMarstekUsage}W", $hwMarstekStatus);
+		printRow('Laders verbruik', $hwChargerUsage, 'Watt');
+		echo ' '.PHP_EOL;
+
+// === Print Inverter Status 
+		echo ' -/- Ontladen                        -\-'.PHP_EOL;
+		printRow('EcoFlow #1 Output', $hwInvOneReturn, 'Watt');
+		printRow('Ecoflow #2 Output', $hwInvTwoReturn, 'Watt');
+		printRow('Marstek #1 Output', $hwMarstekReturn, 'Watt');
+		echo ' '.PHP_EOL;
+		
+// === Print Surplus/P1 Available
+		echo ' -/- Overschot                       -\-'.PHP_EOL;
+		printRow('Beschikbaar overschot totaal', $grossAvailableSolarPower, 'Watt');
+		printRow('Marstek target', $marstekChargerTarget, 'Watt');
+		printRow('Marstek werkelijk', $hwMarstekUsage, 'Watt');
+		printRow('Marstek delta', $marstekDelta, 'Watt');
+		printRow('Resterend t.b.v piBattery', $availableSolarPower, 'Watt');
+		printRow('Overschot oude berekening', $P1ChargerAvailable, 'Watt');
+		echo ' '.PHP_EOL;
+		
 // === Print Baseload
 		echo ' -/- Baseload                        -\-'.PHP_EOL;
 		printRow('Ingestelde baseload', $currentBaseload, 'Watt');
@@ -182,6 +191,7 @@
 		printRow("Fase {$fase} bescherming", ($faseProtect ? "Actief" : "Niet actief"));
 		printRow("Batterij laden geblokkeerd", ($keepChargersOff ? "Actief" : "Niet actief"));
 		printRow("Batterij ontladen geblokkeerd", ($forceBaseloadNull ? "Actief" : "Niet actief"));
+		printRow("High Consumption", ($highConsumption ? "Actief" : "Niet actief"));
 		echo ' '.PHP_EOL;
 		
 // === Print additional debugMsg

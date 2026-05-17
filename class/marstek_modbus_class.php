@@ -142,7 +142,7 @@ class MarstekModbus
 			pack('n', $address) .
 			pack('n', $value);
 
-		error_log(date('H:i:s') . " MODBUS WRITE {$address}={$value}\n", 3, '/home/siewert/pibatteryMarstekModbus/data/write_debug.log');
+		//error_log(date('H:i:s') . " MODBUS WRITE {$address}={$value}\n", 3, '/home/siewert/pibatteryMarstekModbus/data/write_debug.log');
 		
 		fwrite($this->socket, $packet);
 		$response = fread($this->socket, 256);
@@ -204,9 +204,9 @@ class MarstekModbus
 		}
 
 		$data['online']         = true;
-		$data['batteryVoltage'] = round($bat[0] / 100, 2);
+		$data['batteryVoltage'] = round($bat[0] / 100, 1);
 		$data['batteryCurrent'] = round($this->toSigned16($bat[1]) / 100, 2);
-		$data['batterySoc']     = round($bat[2] / 10, 1);
+		$data['batterySoc']     = round($bat[2] / 10, 0);
 		$data['batteryTemp']    = $this->toSigned16($bat[3]);
 		$data['batteryState']   = $bat[4];
 

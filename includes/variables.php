@@ -116,14 +116,14 @@
 	$pv2TwoInputVolt 		= ($invTwo['data']['20_1.pv2InputVolt']) / 10;
 	$pvAvTwoInputVoltage    = round(($pv1TwoInputVolt + $pv2TwoInputVolt) / 2, 2);
 	
-	$pvAvInputVoltage       = round(($pvAvOneInputVoltage + $pvAvTwoInputVoltage) / 2, 2);
+	$pvAvInputVoltage       = round(($pvAvOneInputVoltage + $pvAvTwoInputVoltage) / 2, 1);
 
 // = Get Inverter status
 	//$invOneStatus			= $ecoflow->getDeviceOnline($ecoflowOneSerialNumber);
 	//$invTwoStatus			= $ecoflow->getDeviceOnline($ecoflowTwoSerialNumber);
 	$invOneTemp             = ($invOne['data']['20_1.llcTemp']) / 10;
 	$invTwoTemp             = ($invTwo['data']['20_1.llcTemp']) / 10;
-	$invTemp                = ($invOneTemp + $invTwoTemp) / 2;
+	$invTemp                = round(($invOneTemp + $invTwoTemp) / 2, 0);
 	
 // = Get P1 / Solar and real power usage
 	$productionTotal        = ($hwSolarReturn + $hwInvReturn);	

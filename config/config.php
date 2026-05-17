@@ -19,29 +19,35 @@
 // = Battery variables
 	$batteryVolt            = 25.6;         					 // Battery Voltage
 	$batteryAh              = 300;          					 // Total Ah of all batteries
-	$batteryMinimum         = 15;           					 // Minimum percentage to keep in the battery, wintertime will be automaticly set to 25%
-	$marstekMinimum         = 15;
+	$batteryMinimum         = 15;           					 // Minimum percentage to keep in the battery
 
 	$batteryVoltMax         = 27.0; 
 	$batteryVoltTrigger     = 25.3;
 	$batteryVoltMin         = 23.0;
 	
-// = Inverter variables
-	$ecoflowOneMaxOutput   	= 580;
-	$ecoflowTwoMaxOutput   	= 580;
-	$marstekMaxOutput      	= 800;
+// = EcoFlow Inverter variables
+	$ecoflowOneMaxOutput   	= 580;								 // EcoFlow inverter #1 max output
+	$ecoflowTwoMaxOutput   	= 580;								 // EcoFlow inverter #1 max output
 	$ecoflowMinOutput      	= 100;         					     // Minimum output (Watts); the inverter is allowed to deliver
-	$ecoflowMaxInvTemp     	= 65;           					 	 // Maximum internal temperature (°C); inverter stops feeding above this temperature
+	$ecoflowMaxInvTemp     	= 65;           					 // Maximum internal temperature (°C)
+
+// = Marstek variables
+	$marstekMaxOutput      	= 800;								 // Marstek max output
+	$marstekMinimum         = 15;								 // Minimum percentage to keep in the battery
+	//$marstekMinInput        = 100;								 // Minimum charging power
+	//$marstekMaxInput        = 2500;								 // Maximum charger power
 	
 // = Charger variables
-	$chargerhyst            = 150;          					 	 // Only turn off chargers if import exceeds this many Watts (prevents flip-flopping)
-	$chargerWattsIdle       = 80;          					     // Standby Watts of all chargers when the batteries are full
+	$chargerhyst            = 100;          					 // P1 hysteresis (Max p1 import) for toggling chargers
+	$chargerWattsIdle       = 80;          					     // Standby Watts of all chargers when idle
 	$chargerPausePct        = 90;           					 // When battery has been charged 100% till what % has it to drop before charging is allowed again
 	$chargeSessions			= 15;                                // How many charge session to calculate charging loss 
-	$chargerPause           = 60;          					 	 // Delay in seconds before toggling chargers (prevents flip-flops), But only if realUsage is lower then 2500w
+	$chargerPause           = 60;          					 	 // Delay in seconds before toggling chargers (prevents flip-flops)
+	$chargerBlock			= 2000;								 // If Realusage exceeds this value toggling charger ON is blocked
 	
 // = Baseload variables
-	$baseloadDelta			= 10;
+	$baseloadPosDelta		= 10;								 // Baseload update delta if p1 is importing @ injecting
+	$baseloadNegDelta		= 20;								 // Baseload update delta if p1 is exporting @ injecting
 	
 // = Phase protection
 	$faseProtection         = 'yes';        				     // Value 'yes' or 'no'
@@ -55,7 +61,7 @@
 	$bmsWakeVoltOn  		= 22.0;  							 // BMS minimum voltage at which 1 charger will keep BMS awake
 	$bmsWakeVoltOff 		= 23.5;  							 // BMS stop voltage at wich 1 charger will stop charging
 
-// = HomeWizard variables
+// = HomeWizard/Inverter IP variables
 	$hwP1IP                 = '192.168.178.1';     			 // HomeWizard P1-meter IP address
 	$hwKwhIP                = '192.168.178.2';     			 // HomeWizard Solar kWh meter IP address
 	$hwEcoFlowOneIP         = '192.168.178.3';     			 // HomeWizard EcoFlow One socket IP address
@@ -64,13 +70,8 @@
 	$hwChargerTwoIP         = '192.168.178.6';     			 // HomeWizard Charger TWO (600W socket) IP address
 	$hwChargerThreeIP       = '192.168.178.7';    				 // HomeWizard Charger THREE (350W socket) IP address
 	$hwChargerFourIP        = '192.168.178.8';    			 // HomeWizard Charger FOUR (300W socket) IP address
-	
-// = Marstek variables
 	$hwMarstekIP         	= '192.168.178.100';    			 // HomeWizard Marstek socket IP address
-	$hwMarstekMaxReturn 	=  800;
-
-	$marstekIP              = '192.168.178.9';
-	$marstekPort            = 30000;
+	$marstekIP              = '192.168.178.105';				 // Marstek IP adress
 	
 // = Chargers
 	$chargers = [

@@ -6,7 +6,7 @@
 // **************************************************************//
 //
 
-	if ($runCharger && $isManualRun){
+	if ($runCharger && !$isManualRun){
 // = -------------------------------------------------
 // = Fase Protection
 // = -------------------------------------------------
@@ -31,7 +31,7 @@
 // = -------------------------------------------------
 // = Battery voltage low, keep BMS awake
 // = -------------------------------------------------
-	if ($runCharger && $pvAvInputVoltage <= $batteryVoltMin && $hwChargersUsage == 0 && $hwInvsReturn == 0 && !$bmsWakeActive && !$isManualRun) {
+	if ($runCharger && !$isManualRun && $pvAvInputVoltage <= $batteryVoltMin && $hwChargersUsage == 0 && $hwInvsReturn == 0 && !$bmsWakeActive && !$isManualRun) {
 
 		if ($hwChargerTwoStatus == 'Off') {
 			switchHwSocket('two', 'On');
