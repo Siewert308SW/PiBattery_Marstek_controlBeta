@@ -272,16 +272,10 @@ class MarstekModbus
 // = -------------------------------------------------
 	public function setChargePower(int $watts): bool
 	{
+		
 		$watts = abs($watts);
 
-		$this->enableControl();
-
-		if (!$this->writeHoldingRegister(42020, $watts)) {
-			$this->disconnect();
-			return false;
-		}
-
-		$result = $this->writeHoldingRegister(42010, 1);
+		$result = $this->writeHoldingRegister(42020, $watts);
 
 		$this->disconnect();
 
@@ -305,7 +299,7 @@ class MarstekModbus
 
 		return $result;
 	}
-
+	
 // = -------------------------------------------------
 // = Set Discharge Power
 // = -------------------------------------------------

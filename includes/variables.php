@@ -41,8 +41,8 @@
 	$sunriseTime 			= DateTime::createFromFormat('H:i', $sunrise);
 	$sunsetTime 			= DateTime::createFromFormat('H:i', $sunset);
 	
-	$sunriseTime->modify('+1 hour');
-	$sunsetTime->modify('-1 hour');
+	$sunriseTime->modify('+' . $sunriseOffset . ' hour');
+	$sunsetTime->modify('-' . $sunsetOffset . ' hour');
 	
 	$sunriseLate	 		= $sunriseTime->format('H:i');
 	$sunsetEarly		 	= $sunsetTime->format('H:i');
@@ -58,6 +58,10 @@
 
 // = Domoticz State File
 	$domoticzStateFile 		= $piBatteryPath . 'data/domoticz_state.json';
+
+// = Get solar surplus history
+	$surplusHistoryFile 	= $piBatteryPath . 'data/surplusHistory.json';
+	$varsHist 				= file_exists($surplusHistoryFile) ? json_decode(file_get_contents($surplusHistoryFile), true) : [];
 	
 // = Marstek Variables
 	$marstekBatVolt 		= $marstekData['batteryVoltage'];
@@ -69,10 +73,10 @@
 	$marstekRTE		    	= $marstekData['lifetimeRte'];
 	
 	$hwMarstekSocket = getHwData($hwMarstekIP);
-	if ($hwMarstekSocket >= 0 && $hwMarstekSocket <= 10) {
+	if ($hwMarstekSocket >= 0 && $hwMarstekSocket <= $marstekSocketThreshold) {
 		$hwMarstekReturn = 0; 
 		$hwMarstekUsage = 0;
-	} elseif ($hwMarstekSocket > 10) {
+	} elseif ($hwMarstekSocket > $marstekSocketThreshold) {
 		$hwMarstekReturn = 0; 
 		$hwMarstekUsage = $hwMarstekSocket;		
 	} elseif ($hwMarstekSocket < 0) {
@@ -86,26 +90,33 @@
 	$hwP1Fase2              = getHwP1FaseData($hwP1IP, $fase2);
 	$hwP1Fase3              = getHwP1FaseData($hwP1IP, $fase3);
 	$hwSolarReturn          = getHwData($hwKwhIP);
-	$hwInvOneReturn         = getHwData($hwEcoFlowOneIP);
-	$hwInvTwoReturn         = getHwData($hwEcoFlowTwoIP);
+	$_hwInvOne              = getHwAll($hwEcoFlowOneIP);
+	$_hwInvTwo              = getHwAll($hwEcoFlowTwoIP);
+	$_hwChargerOne          = getHwAll($hwChargerOneIP);
+	$_hwChargerTwo          = getHwAll($hwChargerTwoIP);
+	$_hwChargerThree        = getHwAll($hwChargerThreeIP);
+	$_hwChargerFour         = getHwAll($hwChargerFourIP);
+
+	$hwInvOneReturn         = $_hwInvOne['power'];
+	$hwInvTwoReturn         = $_hwInvTwo['power'];
 	$hwInvsReturn           = ($hwInvOneReturn + $hwInvTwoReturn);
 	$hwInvReturn            = ($hwInvOneReturn + $hwInvTwoReturn + $hwMarstekReturn);
 
-	$hwChargerOneUsage      = getHwData($hwChargerOneIP);
-	$hwChargerTwoUsage      = getHwData($hwChargerTwoIP);
-	$hwChargerThreeUsage    = getHwData($hwChargerThreeIP);
-	$hwChargerFourUsage    	= getHwData($hwChargerFourIP);
+	$hwChargerOneUsage      = $_hwChargerOne['power'];
+	$hwChargerTwoUsage      = $_hwChargerTwo['power'];
+	$hwChargerThreeUsage    = $_hwChargerThree['power'];
+	$hwChargerFourUsage    	= $_hwChargerFour['power'];
 	$hwChargersUsage        = ($hwChargerOneUsage + $hwChargerTwoUsage + $hwChargerThreeUsage + $hwChargerFourUsage);
 	$hwChargerUsage         = ($hwChargerOneUsage + $hwChargerTwoUsage + $hwChargerThreeUsage + $hwChargerFourUsage + $hwMarstekUsage);
 
-	$hwChargerOneStatus     = getHwStatus($hwChargerOneIP);
-	$hwChargerTwoStatus     = getHwStatus($hwChargerTwoIP);
-	$hwChargerThreeStatus   = getHwStatus($hwChargerThreeIP);
-	$hwChargerFourStatus    = getHwStatus($hwChargerFourIP);
+	$hwChargerOneStatus     = $_hwChargerOne['status'];
+	$hwChargerTwoStatus     = $_hwChargerTwo['status'];
+	$hwChargerThreeStatus   = $_hwChargerThree['status'];
+	$hwChargerFourStatus    = $_hwChargerFour['status'];
 	$hwMarstekStatus        = getHwStatus($hwMarstekIP);
 	
-	$hwInvOneStatus         = getHwStatus($hwEcoFlowOneIP);
-	$hwInvTwoStatus         = getHwStatus($hwEcoFlowTwoIP);
+	$hwInvOneStatus         = $_hwInvOne['status'];
+	$hwInvTwoStatus         = $_hwInvTwo['status'];
 	
 // = Get battery Voltage via inverter
 	$pv1OneInputVolt 		= ($invOne['data']['20_1.pv1InputVolt']) / 10;
@@ -133,13 +144,13 @@
 	$P1ChargerAvailable     = ($P1ChargerRef < 0 && $hwInvReturn == 0 ? $P1ChargerRef : 0);
 	
 // = Get Inverter and charger real output
-	$hwInvOneTotal          = getHwTotalOutputData($hwEcoFlowOneIP);
-	$hwInvTwoTotal          = getHwTotalOutputData($hwEcoFlowTwoIP);
+	$hwInvOneTotal          = $_hwInvOne['total_export'];
+	$hwInvTwoTotal          = $_hwInvTwo['total_export'];
 	$hwInvTotal             = ($hwInvOneTotal + $hwInvTwoTotal);
-	$hwChargerOneTotal      = getHwTotalInputData($hwChargerOneIP);
-	$hwChargerTwoTotal      = getHwTotalInputData($hwChargerTwoIP);
-	$hwChargerThreeTotal    = getHwTotalInputData($hwChargerThreeIP);
-	$hwChargerFourTotal     = getHwTotalInputData($hwChargerFourIP);
+	$hwChargerOneTotal      = $_hwChargerOne['total_import'];
+	$hwChargerTwoTotal      = $_hwChargerTwo['total_import'];
+	$hwChargerThreeTotal    = $_hwChargerThree['total_import'];
+	$hwChargerFourTotal     = $_hwChargerFour['total_import'];
 	$hwChargersTotalInput   = ($hwChargerOneTotal + $hwChargerTwoTotal + $hwChargerThreeTotal + $hwChargerFourTotal);
 
 // = Get Current Baseload
@@ -155,7 +166,7 @@
 	$pendingSwitch 	  		= $vars['charger_pending_switch'] ?? false;
 	$baseloadPendingSwitch 	= $vars['baseloading_pending_switch'] ?? false;
 	$charger_pending_type 	= $vars['charger_pending_type'] ?? null;
-	$chargerLoss 			= round($vars['charger_loss_dynamic'] ?? 0.22524337035732608, 7);
+	$chargerLoss 			= round($vars['charger_loss_dynamic'] ?? $chargerLossDefault, 7);
 	$chargerRTE 			= round(100 - ($chargerLoss * 100), 1);	
 	$pauseCharging 			= $vars['pauseCharging'] ?? false;
 	$pauseMarstekCharging   = $vars['pauseMarstekCharging'] ?? false;
@@ -168,8 +179,7 @@
 	$battery_empty			= $vars['battery_empty'] ?? false;
 	$battery_allowed		= $vars['battery_allowed'] ?? false;
 	$invInjection			= $vars['invInjection'] ?? false;
-	$testVarUpdateNeeded	= $vars['testVarUpdateNeeded'] ?? false;
-	$testVarUpdateNotNeeded = $vars['testVarUpdateNotNeeded'] ?? false;
+	$baseloadIdleUntil		= $vars['baseload_idle_until'] ?? 0;
 	
 // = Get/Set Battery Charge/Discharge/SOC values
 	$batteryCapacitykWh     = ($batteryVolt * $batteryAh / 1000);
@@ -186,7 +196,7 @@
 	$nettoCharged			= round(($chargeEnd - $chargeCalibrated), 3);
 	$brutoDischarged 		= round(($dischargeEnd - $dischargeStart), 3);
 	$batteryAvailable	    = round((($batteryCapacitykWh) - ($brutoDischarged - ($brutoCharged  * (1 - $chargerLoss)))), 2);
-	$marstekCapacitykWh	    = round((51.2 * 100 / 1000), 2);
+	$marstekCapacitykWh	    = round(($marstekVolt * $marstekAh / 1000), 2);
 	$marstekCapacityWh 		= ($marstekCapacitykWh * 1000);
 	$marstekAvailable	    = round(($marstekCapacitykWh / 100 * $marstekBatSoc), 2);
 	$batteryPct 			= round(($batteryAvailable / $batteryCapacitykWh) * 100, 0);

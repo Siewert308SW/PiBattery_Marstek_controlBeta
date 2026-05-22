@@ -51,24 +51,38 @@
 	$isCronRun 				= php_sapi_name() === 'cli' && !$isCliInteractive;
 
 // = -------------------------------------------------
+// = Lockfile check
+// = -------------------------------------------------
+	if (!$isManualRun) {
+		$lockFile = $piBatteryPath . 'data/pibattery.lock';
+		if (file_exists($lockFile)) {
+			if ((time() - filemtime($lockFile)) < 30) {
+				exit;
+			}
+		}
+		touch($lockFile);
+		
+		$runStartTime = microtime(true);
+	}
+	
+// = -------------------------------------------------
 // = Determine if script may be executed
 // = -------------------------------------------------
 	
 // = Determine if Charger script may execute
 	if(!$isManualRun) {
-		if (!isset($scriptTimer['lastChargerRun']) || ($timeStamp - $scriptTimer['lastChargerRun']) >= 30) {
+		if (!isset($scriptTimer['lastChargerRun']) || ($timeStamp - $scriptTimer['lastChargerRun']) >= 29) {
 			$runCharger = true;
 			$runBootstrap = true;
 		}
 
 	// = Determine if Baseload script may be executed
-		if (!isset($scriptTimer['lastBaseloadRun']) || ($timeStamp - $scriptTimer['lastBaseloadRun']) >= 10) {
+		if (!isset($scriptTimer['lastBaseloadRun']) || ($timeStamp - $scriptTimer['lastBaseloadRun']) >= 9) {
 			$runBaseload = true;
 			$runBootstrap = true;
 		}
 		
 	}
-
 	
 // = -------------------------------------------------
 // = Script may be executed
@@ -123,11 +137,11 @@
 // === Print Marstek Status 
 		echo " -/- Marstek                         -\-".PHP_EOL;
 		printRow("Marstek actief", ($useMarstek ? 'Ja' : 'Nee'), '');
-		printRow('Marstek SOC', $marstekBatSoc, '%');
-		printRow('Marstek voltage', $marstekBatVolt, 'Volt');
-		printRow('Marstek beschikbaar', round($marstekAvailable, 2), 'kWh');
-		printRow('Marstek RTE',  round($marstekRTE, 1), '%');
-		printRow('Marstek Temperatuur', $marstekTemp, '°C');
+		printRow('Batterij SOC', $marstekBatSoc, '%');
+		printRow('Batterij voltage', $marstekBatVolt, 'Volt');
+		printRow('Batterij beschikbaar', round($marstekAvailable, 2), 'kWh');
+		printRow('Batterij RTE',  round($marstekRTE, 1), '%');
+		printRow('Batterij Temperatuur', $marstekTemp, '°C');
 		
 		if ($hwMarstekSocket > 9 && $marstekBatSoc < 100) {
 			printRow('Geschatte oplaadtijd '.round($marstekBatSoc,0).'% > 100%', $realMarstekChargeTime, 'u/m');
@@ -171,7 +185,6 @@
 		printRow('Marstek werkelijk', $hwMarstekUsage, 'Watt');
 		printRow('Marstek delta', $marstekDelta, 'Watt');
 		printRow('Resterend t.b.v piBattery', $availableSolarPower, 'Watt');
-		printRow('Overschot oude berekening', $P1ChargerAvailable, 'Watt');
 		echo ' '.PHP_EOL;
 		
 // === Print Baseload
@@ -226,4 +239,53 @@
 		}
 		
 	}
+	
+// = -------------------------------------------------
+// = Remove Lockfile check
+// = -------------------------------------------------
+	if (!$isManualRun && file_exists($lockFile)) {
+		unlink($lockFile);
+	}
+
+// = -------------------------------------------------
+// = Run Timer Write
+// = -------------------------------------------------
+
+	if (!$isManualRun && $runtimeDebug == 'yes') {
+		$runEndTime  = microtime(true);
+		$runDuration = round($runEndTime - $runStartTime, 3);
+		
+		if ($hwSolarReturn == 0) {
+		$runTimerFile = $piBatteryPath . 'data/runTimer_Nighttime.json';
+		} else {
+		$runTimerFile = $piBatteryPath . 'data/runTimer_Daytime.json';	
+		}
+		
+		$runTimerVars = file_exists($runTimerFile) ? json_decode(file_get_contents($runTimerFile), true) : [];
+		
+			$runTimerVars[] = [
+				'time'     => date('H:i:s'),
+				'duration' => $runDuration,
+				'charger'  => $runCharger,
+				'baseload' => $runBaseload,
+		        'Marstek Charging' => $hwMarstekUsage,
+		        'piBattery Charging' => $hwChargersUsage, 
+		        'EcoFlow #1 Output' => $hwInvOneReturn, 
+		        'Ecoflow #2 Output' => $hwInvTwoReturn, 
+		        'Marstek Output' => $hwMarstekReturn,
+		        'Ingestelde baseload' => $currentBaseload,
+		        'Gemeten output' => abs($hwInvReturn),
+		        'Nieuwe baseload' => ($newBaseload / 10),
+		        'Delta target' => ($delta / 10),
+				'updateBaseload' => $updateNeeded,
+				'faseProtect' => $faseProtect,
+				'highConsumption' => $highConsumption
+			];
+		
+		// Bewaar alleen de laatste 20 runs
+		//if (count($runTimerVars) > 20) array_shift($runTimerVars);
+		
+		writeJsonLocked($runTimerFile, $runTimerVars);
+	}
+
 ?>

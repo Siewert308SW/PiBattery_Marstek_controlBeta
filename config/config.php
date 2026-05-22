@@ -8,6 +8,7 @@
 
 // = Debug?
 	$debug                  = 'yes';        					 // Value 'yes' or 'no'
+	$runtimeDebug           = 'no';         					 // Value 'yes' or 'no'
 	
 // = Location variables
 	$latitude               = '00.00000';   					 // Latitude
@@ -28,26 +29,35 @@
 // = EcoFlow Inverter variables
 	$ecoflowOneMaxOutput   	= 580;								 // EcoFlow inverter #1 max output
 	$ecoflowTwoMaxOutput   	= 580;								 // EcoFlow inverter #1 max output
-	$ecoflowMinOutput      	= 100;         					     // Minimum output (Watts); the inverter is allowed to deliver
+	$ecoflowMinOutput      	= 60;         					     // Minimum output (Watts); the inverter is allowed to deliver
 	$ecoflowMaxInvTemp     	= 65;           					 // Maximum internal temperature (°C)
 
 // = Marstek variables
 	$marstekMaxOutput      	= 800;								 // Marstek max output
 	$marstekMinimum         = 15;								 // Minimum percentage to keep in the battery
-	//$marstekMinInput        = 100;								 // Minimum charging power
-	//$marstekMaxInput        = 2500;								 // Maximum charger power
+	$marstekVolt            = 51.2;								 // Marstek battery voltage
+	$marstekAh              = 100;								 // Marstek battery capacity in Ah
+	$marstekChargerStep     = 50;								 // Marstek charger step size in Watt
+	$marstekChargerMin      = 100;								 // Marstek minimum charge power in Watt
+	$marstekChargerMax      = 2500;								 // Marstek maximum charge power in Watt
+	$marstekSocketThreshold = 10;								 // Marstek socket threshold to filter standby/noise in Watt
 	
 // = Charger variables
-	$chargerhyst            = 100;          					 // P1 hysteresis (Max p1 import) for toggling chargers
+	$chargerhyst            = 50;          					 	 // P1 hysteresis for toggling chargers
 	$chargerWattsIdle       = 80;          					     // Standby Watts of all chargers when idle
 	$chargerPausePct        = 90;           					 // When battery has been charged 100% till what % has it to drop before charging is allowed again
 	$chargeSessions			= 15;                                // How many charge session to calculate charging loss 
-	$chargerPause           = 60;          					 	 // Delay in seconds before toggling chargers (prevents flip-flops)
-	$chargerBlock			= 2000;								 // If Realusage exceeds this value toggling charger ON is blocked
+	$chargerPause          	= 30;          					 	 // Delay in seconds before toggling chargers (prevents flip-flops)
+	$chargerBlock			= 1800;								 // If Realusage exceeds this value toggling charger ON is blocked
+	$chargerLossDefault     = 0.225;							 // Default charger loss fallback (used before dynamic calculation is available)
 	
 // = Baseload variables
-	$baseloadPosDelta		= 10;								 // Baseload update delta if p1 is importing @ injecting
+	$baseloadPosDelta		= 15;								 // Baseload update delta if p1 is importing @ injecting
 	$baseloadNegDelta		= 20;								 // Baseload update delta if p1 is exporting @ injecting
+	$baseloadIdleTimeout	= 120;								 // Seconds inverters stay on minimum output (idle) after injection stops
+	$sunriseOffset          = 1;								 // Hours after sunrise before injection is allowed (Winter break)
+	$sunsetOffset           = 1;								 // Hours before sunset after which injection is blocked (Winter break)
+	$solarSurplusMargin     = 5;								 // Small margin in Watt subtracted from available solar surplus before charging
 	
 // = Phase protection
 	$faseProtection         = 'yes';        				     // Value 'yes' or 'no'
@@ -75,10 +85,10 @@
 	
 // = Chargers
 	$chargers = [
-		'charger1' => ['ip' => ''.$hwChargerOneIP.'', 'power' => 350, 'label' => 'one', 'master' => true, 'spare_charger' => false],
-		'charger2' => ['ip' => ''.$hwChargerTwoIP.'', 'power' => 600, 'label' => 'two', 'master' => false, 'spare_charger' => false],
-		'charger3' => ['ip' => ''.$hwChargerThreeIP.'', 'power' => 350, 'label' => 'three', 'master' => false, 'spare_charger' => false],
-		'charger4' => ['ip' => ''.$hwChargerFourIP.'', 'power' => 300, 'label' => 'four', 'master' => false, 'spare_charger' => false],
+		'charger1' => ['ip' => ''.$hwChargerOneIP.'', 'power' => 360, 'label' => 'one', 'master' => true, 'spare_charger' => false],
+		'charger2' => ['ip' => ''.$hwChargerTwoIP.'', 'power' => 620, 'label' => 'two', 'master' => false, 'spare_charger' => false],
+		'charger3' => ['ip' => ''.$hwChargerThreeIP.'', 'power' => 360, 'label' => 'three', 'master' => false, 'spare_charger' => false],
+		'charger4' => ['ip' => ''.$hwChargerFourIP.'', 'power' => 320, 'label' => 'four', 'master' => false, 'spare_charger' => false],
 	];
 
 // = Ecoflow Powerstream API variables

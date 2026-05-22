@@ -52,6 +52,45 @@
 	}
 
 // = -------------------------------------------------
+// = Function GET HomeWizard data + status (cached)
+// = -------------------------------------------------
+	function getHwAll($ip) {
+		static $cache = [];
+		if (isset($cache[$ip])) return $cache[$ip];
+
+		$result = ['power' => 0, 'status' => 'Off', 'total_import' => 0, 'total_export' => 0];
+
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+
+		curl_setopt($ch, CURLOPT_URL, "http://".$ip."/api/v1/data");
+		$raw = curl_exec($ch);
+		if (!curl_errno($ch)) {
+			$decoded = json_decode($raw);
+			$result['power']        = round($decoded->active_power_w);
+			$result['total_import'] = round($decoded->total_power_import_kwh, 3);
+			$result['total_export'] = round($decoded->total_power_export_kwh, 3);
+		} else {
+			debugMsg('Kan geen gegevens ophalen van Homewizard: '.$ip.'!');
+		}
+
+		curl_setopt($ch, CURLOPT_URL, "http://".$ip."/api/v1/state");
+		$raw = curl_exec($ch);
+		if (!curl_errno($ch)) {
+			$decoded = json_decode($raw);
+			$result['status'] = ($decoded->power_on == 1 ? 'On' : 'Off');
+		} else {
+			debugMsg('Kan geen status ophalen van Homewizard: '.$ip.'!');
+		}
+
+		curl_close($ch);
+		$cache[$ip] = $result;
+		return $result;
+	}
+
+// = -------------------------------------------------
 // = Function GET HomeWizard (energy-socket) status
 // = -------------------------------------------------
 	function getHwStatus($ip) {
@@ -305,7 +344,7 @@
 // = Send PiBattery/Marstek battery status to Domoticz
 // = -------------------------------------------------
 	function sendBatteryStatusToDomoticz() {
-		$domoticzUrl   = 'http://192.168.178.7:8080';
+		global $domoticzIP;
 		global $batteryPct;
 		global $marstekBatSoc;
 		global $marstekMaxOutput;
@@ -315,6 +354,7 @@
 		global $useMarstek;
 		global $batteryMinimum;
 		global $marstekMinimum;
+		$domoticzUrl   = 'http://'.$domoticzIP.'';
 		
 		$totalDischargeMarstek  = 0;
 		$totalDischargePiBattery  = 0;
@@ -323,11 +363,11 @@
 		$totalMarstekPct = round(($marstekBatSoc), 0);
 		
 // === Calculate total injection		
-		if ($marstekBatSoc > 45) {
+		if ($marstekBatSoc >= 35) {
 			$totalDischargeMarstek = $marstekMaxOutput;
 		}
 
-		if ($batteryPct > 45) {
+		if ($batteryPct >= 35) {
 			$totalDischargePiBattery = $ecoflowOneMaxOutput + $ecoflowTwoMaxOutput;
 		}
 

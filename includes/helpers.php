@@ -6,26 +6,60 @@
 // **************************************************************//
 //
 
-	if ($runCharger && !$isManualRun){
+// = -------------------------------------------------
+// = API / Modbus beschikbaarheid check
+// = -------------------------------------------------
+/*
+	if (!$isManualRun) {
+			$EcoflowOnline = false;
+			$MarstekOnline = false;
+		if (!isset($invOne['data']) || !isset($invTwo['data'])) {
+			debugMsg('EcoFlow API niet beschikbaar, systeem geblokkeerd');
+			//switchHwSocket('invOne', 'Off');
+			//switchHwSocket('invTwo', 'Off');
+			//switchHwSocket('one', 'Off');
+			//switchHwSocket('two', 'Off');
+			//switchHwSocket('three', 'Off');
+			//switchHwSocket('four', 'Off');
+			//unlink($lockFile);
+			//exit;
+			$EcoflowOnline = true;
+		}
+
+		if (!$marstekData['online']) {
+			debugMsg('Marstek Modbus niet beschikbaar, systeem geblokkeerd');
+			//switchHwSocket('four', 'Off');
+			//switchHwSocket('three', 'Off');
+			//switchHwSocket('two', 'Off');
+			//switchHwSocket('one', 'Off');
+			//unlink($lockFile);
+			//exit;
+			$MarstekOnline = true;
+		}
+	}
+*/	
+
+
 // = -------------------------------------------------
 // = Fase Protection
 // = -------------------------------------------------
-	if ($hwP1Fase >= $maxFaseWatts && !$faseProtect && $hwChargerUsage > 0 && !$isManualRun) {
-		$vars['faseProtect'] = true;
-		$varsChanged = true;
+	if ($runCharger && !$isManualRun){
+		if ($hwP1Fase >= $maxFaseWatts && !$faseProtect && $hwChargerUsage > 0 && !$isManualRun) {
+			$vars['faseProtect'] = true;
+			$varsChanged = true;
 
-		if ($hwChargerOneStatus == 'On' || $hwChargerTwoStatus == 'On' || $hwChargerThreeStatus == 'On' || $hwChargerFourStatus == 'On') {
-			switchHwSocket('four', 'Off'); sleep(1);
-			switchHwSocket('three', 'Off'); sleep(1);
-			switchHwSocket('two', 'Off'); sleep(1);
-			switchHwSocket('one', 'Off');
+			if ($hwChargerOneStatus == 'On' || $hwChargerTwoStatus == 'On' || $hwChargerThreeStatus == 'On' || $hwChargerFourStatus == 'On') {
+				switchHwSocket('four', 'Off'); sleep(1);
+				switchHwSocket('three', 'Off'); sleep(1);
+				switchHwSocket('two', 'Off'); sleep(1);
+				switchHwSocket('one', 'Off');
+			}
+			return;
+
+		} elseif ($hwP1Fase < $maxFaseWatts && $faseProtect && $hwChargerUsage == 0 && !$isManualRun) {
+			$vars['faseProtect'] = false;
+			$varsChanged = true;
 		}
-		return;
-
-	} elseif ($hwP1Fase < $maxFaseWatts && $faseProtect && $hwChargerUsage == 0 && !$isManualRun) {
-		$vars['faseProtect'] = false;
-		$varsChanged = true;
-	}
 	}
 	
 // = -------------------------------------------------
@@ -81,11 +115,11 @@
 			$realMarstekChargeTime = convertTime($chargeMarstekTime);
 			
 		}
-
+	
 // = -------------------------------------------------	
 // = Estimated discharge time  || $runCharger
 // = -------------------------------------------------
-		
+	
 // === piBattery DischargeTime till minimum-SOC
 		if ($hwInvsReturn < 0 && $batteryPct > $batteryMinimum) {
 			$currentWh = ($batteryPct / 100) * $batteryCapacityWh;
@@ -173,7 +207,7 @@
 	}
 
 // = -------------------------------------------------	
-// = Push data to external Domoticz $batteryPct, $mayDischarge
+// = Push data to Domoticz
 // = -------------------------------------------------
 
 	if ($runCharger && !$isManualRun){	
