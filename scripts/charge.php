@@ -182,7 +182,7 @@
 // = -------------------------------------------------
 // = Keep chargers OFF #failsaves
 // = -------------------------------------------------
-	$highConsumption 	 = ($hwP1Usage > $chargerBlock);
+	$highConsumption 	 = ($hwP1Usage > $chargerBlock || $realUsage > $chargerBlock);
 	$charged		 	 = ($pauseCharging && $pauseMarstekCharging);
 	
 	if (

@@ -26,7 +26,7 @@
 // = Calculate new baseload
 // = -------------------------------------------------
 	if ($hwP1Usage < $totalMaxOutput){
-		$newBaseloadRef = round(min($totalMaxOutput, max(0, ($hwP1Usage + $currentBaseload - 1))) * 10);
+		$newBaseloadRef = round(min($totalMaxOutput, max(0, ($hwP1Usage + $currentBaseload))) * 10);
 	} elseif ($hwP1Usage >= $totalMaxOutput){
 		$newBaseloadRef = round($totalMaxOutput * 10);
 	}
@@ -164,12 +164,12 @@
 		}
 	}
 	
-	if(!$usePiBattery && $batteryPct > 35 && isset($vars['piBattery_empty'])){
+	if(!$usePiBattery && $batteryPct > $batteryEmptyRecoveryPct && isset($vars['piBattery_empty'])){
 		unset($vars['piBattery_empty']);
 		$varsChanged = true;
 	}
 	
-	if(!$useMarstek && $marstekBatSoc > 35 && isset($vars['marstek_empty'])){
+	if(!$useMarstek && $marstekBatSoc > $batteryEmptyRecoveryPct && isset($vars['marstek_empty'])){
 		unset($vars['marstek_empty']);
 		$varsChanged = true;
 	}

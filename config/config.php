@@ -10,18 +10,21 @@
 	$debug                  = 'yes';        					 // Value 'yes' or 'no'
 	$runtimeDebug           = 'no';         					 // Value 'yes' or 'no'
 	
-// = Location variables
+// = Location/Time variables
 	$latitude               = '00.00000';   					 // Latitude
 	$longitude              = '-0.00000';   					 // Longitude
 	$zenitLat               = '89.5';       					 // Zenith latitude: the highest point of the sky as seen from the observer’s location
 	$zenitLong              = '91.7';       					 // Zenith longitude: the highest point of the sky as seen from the observer’s location
 	$timezone               = 'Europe/Amsterdam'; 				 // My php.ini doesn't apply the timezone, so it’s set manually here
+	$sunriseOffset          = 1;								 // Hours after sunrise before injection is allowed (Winter break)
+	$sunsetOffset           = 1;								 // Hours before sunset after which injection is blocked (Winter break)
 
 // = Battery variables
 	$batteryVolt            = 25.6;         					 // Battery Voltage
 	$batteryAh              = 300;          					 // Total Ah of all batteries
 	$batteryMinimum         = 15;           					 // Minimum percentage to keep in the battery
-
+	$batteryEmptyRecoveryPct= 35;								 // Pct from which battery is allowed to inject after full discharge
+	
 	$batteryVoltMax         = 27.0; 
 	$batteryVoltTrigger     = 25.3;
 	$batteryVoltMin         = 23.0;
@@ -48,15 +51,15 @@
 	$chargerPausePct        = 90;           					 // When battery has been charged 100% till what % has it to drop before charging is allowed again
 	$chargeSessions			= 15;                                // How many charge session to calculate charging loss 
 	$chargerPause          	= 30;          					 	 // Delay in seconds before toggling chargers (prevents flip-flops)
-	$chargerBlock			= 1800;								 // If Realusage exceeds this value toggling charger ON is blocked
+	$chargerBlock			= 2500;								 // If Realusage exceeds this value toggling charger ON is blocked
 	$chargerLossDefault     = 0.225;							 // Default charger loss fallback (used before dynamic calculation is available)
 	
 // = Baseload variables
 	$baseloadPosDelta		= 15;								 // Baseload update delta if p1 is importing @ injecting
 	$baseloadNegDelta		= 20;								 // Baseload update delta if p1 is exporting @ injecting
-	$baseloadIdleTimeout	= 120;								 // Seconds inverters stay on minimum output (idle) after injection stops
-	$sunriseOffset          = 1;								 // Hours after sunrise before injection is allowed (Winter break)
-	$sunsetOffset           = 1;								 // Hours before sunset after which injection is blocked (Winter break)
+	$baseloadIdleTimeout	= 300;								 // Seconds inverters stay on minimum output (idle) after injection stops
+
+// = 
 	$solarSurplusMargin     = 5;								 // Small margin in Watt subtracted from available solar surplus before charging
 	
 // = Phase protection

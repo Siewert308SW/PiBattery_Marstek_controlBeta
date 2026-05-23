@@ -363,11 +363,11 @@
 		$totalMarstekPct = round(($marstekBatSoc), 0);
 		
 // === Calculate total injection		
-		if ($marstekBatSoc >= 35) {
+		if ($marstekBatSoc >= $batteryEmptyRecoveryPct) {
 			$totalDischargeMarstek = $marstekMaxOutput;
 		}
 
-		if ($batteryPct >= 35) {
+		if ($batteryPct >= $batteryEmptyRecoveryPct) {
 			$totalDischargePiBattery = $ecoflowOneMaxOutput + $ecoflowTwoMaxOutput;
 		}
 
