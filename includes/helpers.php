@@ -202,7 +202,11 @@
 
 // = -------------------------------------------------	
 		
-		if (UpdateDomoticzDeviceIfChanged($marstekRTEIDX, ''.$marstekRTE.'') == 'OK') usleep(100000);
+		if (UpdateDomoticzDeviceIfChanged($ecoFlowTempIDX, ''.$invTemp.'') == 'OK') usleep(100000);
+
+// = -------------------------------------------------	
+		
+		if (UpdateDomoticzDeviceIfChanged($marstekTempIDX, ''.$marstekTemp.'') == 'OK') usleep(100000);
 		
 	}
 

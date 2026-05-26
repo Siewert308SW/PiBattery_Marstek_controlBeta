@@ -1,5 +1,12 @@
 ![Banner](https://github.com/user-attachments/assets/143c1ac7-f58b-4016-88dd-2aac3e8cd6f2)
 
+# PiBattery BETA
+
+**PiBattery - Beta Project**
+Deze repo is mijn test omgeving
+Voor de final/productie werkende repo zie:
+https://github.com/Siewert308SW/PiBattery/
+
 # PiBattery – Eenvoudige Zelfbouw Thuisbatterij
 
 **PiBattery**  
@@ -180,7 +187,7 @@ https://ehoco.nl/eenvoudige-thuisbatterij-zelf-maken/
 ```
 pibatteryMarstekModbus/
 │
-├── pibattery.php                    # Hoofdscript — aanroepen via cronjob (elke 20 sec)
+├── pibattery.php                    # Hoofdscript — aanroepen via cronjob (elke 10 sec)
 ├── bootstrap/
 │   └── bootstrap.php               # Opstart-initialisatie, laadt alle dependencies
 ├── class/

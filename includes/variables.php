@@ -6,6 +6,9 @@
 // **************************************************************//
 //                                                               //
 
+// = php.ini
+	date_default_timezone_set(''.$timezone.'');
+	
 // = Get Ecoflow data
 	$ecoflow 				= new EcoFlowAPI(''.$ecoflowAccessKey.'', ''.$ecoflowSecretKey.'');
 	$invOne 				= $ecoflow->getDevice($ecoflowOneSerialNumber);
@@ -14,9 +17,6 @@
 // = Get Marstek V3 data
 	$marstek 				= new MarstekModbus($marstekIP);
 	$marstekData 			= $marstek->getData();
-	
-// = php.ini
-	date_default_timezone_set(''.$timezone.'');
 	
 // = Time/Date now
 	$currentTimestamp 		= time();

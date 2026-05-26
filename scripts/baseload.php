@@ -25,16 +25,18 @@
 // = -------------------------------------------------	
 // = Calculate new baseload
 // = -------------------------------------------------
+	$solarBuffer = ($hwSolarReturn < -500) ? ($baseloadSolarBuffer) : 0;
+	
 	if ($hwP1Usage < $totalMaxOutput){
-		$newBaseloadRef = round(min($totalMaxOutput, max(0, ($hwP1Usage + $currentBaseload))) * 10);
+		$newBaseloadRef = round(min($totalMaxOutput, max(0, ($hwP1Usage + $currentBaseload + $solarBuffer))) * 10);
 	} elseif ($hwP1Usage >= $totalMaxOutput){
 		$newBaseloadRef = round($totalMaxOutput * 10);
 	}
-	
-	$newBaseload = floor(($newBaseloadRef) / 10) * 10;
 
+	$newBaseload = floor(($newBaseloadRef) / 10) * 10;
+	
 // = -------------------------------------------------
-// = Idle: houd omvormers op minimaal na stoppen injectie
+// = Idle: Keep inverters idle x minutes after injection stops
 // = -------------------------------------------------
 	$baseloadIdle 			= false;
 	$baseloadIdleOverride 	= false;
@@ -219,14 +221,17 @@
 // = Check if baseload needs to be updated
 // = -------------------------------------------------
 	$updateNeeded = false;
-	
+
+	$baseloadPosDelta = ($hwSolarReturn < -500) ? (50) : $baseloadPosDelta;
+	$baseloadNegDelta = ($hwSolarReturn < -500) ? (150) : $baseloadNegDelta;
+			
 	$delta = abs($newBaseload - abs($hwInvReturn * 10));
 	
-		if($hwP1Usage > 0){
+	if($hwP1Usage > 0){
 		$updateNeeded = ($delta > ($baseloadPosDelta * 10));
-		} elseif($hwP1Usage <= 0){
+	} elseif($hwP1Usage <= 0){
 		$updateNeeded = ($delta > ($baseloadNegDelta * 10));
-		}
+	}
 	
 // = -------------------------------------------------	
 // = Update baseload

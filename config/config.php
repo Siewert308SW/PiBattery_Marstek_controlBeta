@@ -8,7 +8,7 @@
 
 // = Debug?
 	$debug                  = 'yes';        					 // Value 'yes' or 'no'
-	$runtimeDebug           = 'no';         					 // Value 'yes' or 'no'
+	$runtimeDebug           = 'yes';         					 // Value 'yes' or 'no'
 	
 // = Location/Time variables
 	$latitude               = '00.00000';   					 // Latitude
@@ -25,9 +25,9 @@
 	$batteryMinimum         = 15;           					 // Minimum percentage to keep in the battery
 	$batteryEmptyRecoveryPct= 35;								 // Pct from which battery is allowed to inject after full discharge
 	
-	$batteryVoltMax         = 27.0; 
-	$batteryVoltTrigger     = 25.3;
-	$batteryVoltMin         = 23.0;
+	$batteryVoltMax         = 27.0;								 // Battery Voltage fully charged while chargers are idle 
+	$batteryVoltTrigger     = 25.3;								 // Battery Voltage 50%
+	$batteryVoltMin         = 23.0;								 // Battery Voltage when empty
 	
 // = EcoFlow Inverter variables
 	$ecoflowOneMaxOutput   	= 580;								 // EcoFlow inverter #1 max output
@@ -42,7 +42,7 @@
 	$marstekAh              = 100;								 // Marstek battery capacity in Ah
 	$marstekChargerStep     = 50;								 // Marstek charger step size in Watt
 	$marstekChargerMin      = 100;								 // Marstek minimum charge power in Watt
-	$marstekChargerMax      = 2500;								 // Marstek maximum charge power in Watt
+	$marstekChargerMax      = 2000;								 // Marstek maximum charge power in Watt
 	$marstekSocketThreshold = 10;								 // Marstek socket threshold to filter standby/noise in Watt
 	
 // = Charger variables
@@ -51,13 +51,15 @@
 	$chargerPausePct        = 90;           					 // When battery has been charged 100% till what % has it to drop before charging is allowed again
 	$chargeSessions			= 15;                                // How many charge session to calculate charging loss 
 	$chargerPause          	= 30;          					 	 // Delay in seconds before toggling chargers (prevents flip-flops)
-	$chargerBlock			= 2500;								 // If Realusage exceeds this value toggling charger ON is blocked
+	$chargerP1Block			= 1800;								 // If P1 usage exceeds this value toggling charger ON is blocked
+	$chargerRealUsageBlock	= 2200;								 // If Real usage exceeds this value toggling charger ON is blocked	
 	$chargerLossDefault     = 0.225;							 // Default charger loss fallback (used before dynamic calculation is available)
 	
 // = Baseload variables
 	$baseloadPosDelta		= 15;								 // Baseload update delta if p1 is importing @ injecting
 	$baseloadNegDelta		= 20;								 // Baseload update delta if p1 is exporting @ injecting
-	$baseloadIdleTimeout	= 300;								 // Seconds inverters stay on minimum output (idle) after injection stops
+	$baseloadIdleTimeout	= 240;								 // Seconds inverters stay on minimum output (idle) after injection stops
+	$baseloadSolarBuffer    = 100;  							 // Some extra Watt baseload buffer during the day to overkom flip/flops
 
 // = 
 	$solarSurplusMargin     = 5;								 // Small margin in Watt subtracted from available solar surplus before charging
@@ -115,7 +117,8 @@
 	$outputCounterIDX 	    = '58';
 	$marstekInputCounterIDX = '160';
 	$marstekOutputCounterIDX= '161';
-	//$ecoFlowTempIDX 		= '50';
+	$ecoFlowTempIDX 		= '50';
+	$marstekTempIDX 		= '163';
 	$batteryRTEIDX 		    = '145';
 	$marstekRTEIDX 		    = '162';
 	
@@ -123,7 +126,8 @@
 	$baseUrl = 'http://'.$domoticzIP.'/json.htm?type=command&param=getdevices&rid=';
 	$urls = [	
 		'batteryVoltageIDX'       => $baseUrl . $batteryVoltageIDX,	
-		//'ecoFlowTempIDX'          => $baseUrl . $ecoFlowTempIDX,
+		'ecoFlowTempIDX'          => $baseUrl . $ecoFlowTempIDX,
+		'marstekTempIDX'          => $baseUrl . $ecoFlowTempIDX,
 		'batterySOCIDX'           => $baseUrl . $batterySOCIDX,
 		'marstekSOCIDX'           => $baseUrl . $marstekSOCIDX,
 		'batteryAvailIDX'         => $baseUrl . $batteryAvailIDX,

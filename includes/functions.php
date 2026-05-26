@@ -294,13 +294,14 @@
 	  global $marstekInputCounterIDX;
 	  global $marstekOutputCounterIDX;
 	  global $pvCounterIDX;
-	  //global $ecoFlowTempIDX;
+	  global $ecoFlowTempIDX;
+	  global $marstekTempIDX;
 	  global $batteryRTEIDX;
 	  global $marstekRTEIDX;
 	  
 	  $reply = ['status' => 'ERROR'];
 	  
-	  if ($idx == $marstekInputCounterIDX || $idx == $marstekOutputCounterIDX || $idx == $inputCounterIDX || $idx == $outputCounterIDX || $idx == $batterySOCIDX || $idx == $marstekSOCIDX || $idx == $batteryVoltageIDX || $idx == $pvCounterIDX || /*$idx == $ecoFlowTempIDX || */$idx == $batteryRTEIDX || $idx == $marstekRTEIDX){
+	  if ($idx == $marstekInputCounterIDX || $idx == $marstekOutputCounterIDX || $idx == $inputCounterIDX || $idx == $outputCounterIDX || $idx == $batterySOCIDX || $idx == $marstekSOCIDX || $idx == $batteryVoltageIDX || $idx == $pvCounterIDX || $idx == $ecoFlowTempIDX || $idx == $marstekTempIDX || $idx == $batteryRTEIDX || $idx == $marstekRTEIDX){
 	  $reply=json_decode(file_get_contents('http://'.$domoticzIP.'/json.htm?type=command&param=udevice&idx='.$idx.'&nvalue=0&svalue='.$cmd.';0'),true);
 	  }
 	  
@@ -344,7 +345,8 @@
 // = Send PiBattery/Marstek battery status to Domoticz
 // = -------------------------------------------------
 	function sendBatteryStatusToDomoticz() {
-		global $domoticzIP;
+		$domoticzUrl   = 'http://192.168.178.7:8080';
+		//global $domoticzIP;
 		global $batteryPct;
 		global $marstekBatSoc;
 		global $marstekMaxOutput;
@@ -354,7 +356,7 @@
 		global $useMarstek;
 		global $batteryMinimum;
 		global $marstekMinimum;
-		$domoticzUrl   = 'http://'.$domoticzIP.'';
+		//$domoticzUrl   = 'http://'.$domoticzIP.'';
 		
 		$totalDischargeMarstek  = 0;
 		$totalDischargePiBattery  = 0;

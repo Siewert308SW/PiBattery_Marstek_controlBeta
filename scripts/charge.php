@@ -26,7 +26,7 @@
 	}
 
 // === End pause
-	if (!$isManualRun && (($vars['pauseCharging'] ?? true) !== false) && $batteryPct <= $chargerPausePct) {
+	if (!$isManualRun && (($vars['pauseCharging'] ?? true) !== false) && $batteryPct <= $chargerPausePct && $hwInvReturn == 0) {
 		$vars['pauseCharging'] = false;
 		$vars['pauseMarstekCharging'] = false;
 		$varsChanged = true;
@@ -45,7 +45,7 @@
 	}
 	
 // === End pause
-	if (!$isManualRun && (($vars['pauseMarstekCharging'] ?? true) !== false) && $marstekBatSoc <= $chargerPausePct) { 
+	if (!$isManualRun && (($vars['pauseMarstekCharging'] ?? true) !== false) && $marstekBatSoc <= $chargerPausePct && $hwInvReturn == 0) { 
 		$vars['pauseMarstekCharging'] = false;
 		$vars['pauseCharging'] = false;
 		$vars['marstek_force_mode'] = '';
@@ -87,7 +87,7 @@
 			$chargedkWh    = $brutoCharged;
 			$dischargedkWh = $brutoDischarged;
 					
-			if ($chargedkWh > 0 && $dischargedkWh > 0 && $dischargedkWh <= $chargedkWh) {
+			if ($chargedkWh > 1 && $dischargedkWh > 1 && $dischargedkWh <= $chargedkWh) {
 				$sessionLoss = 1 - ($dischargedkWh / $chargedkWh);
 
 // === Log session only if new
@@ -182,7 +182,8 @@
 // = -------------------------------------------------
 // = Keep chargers OFF #failsaves
 // = -------------------------------------------------
-	$highConsumption 	 = ($hwP1Usage > $chargerBlock || $realUsage > $chargerBlock);
+	$highConsumption 	 = ($hwP1Usage > $chargerP1Block);
+	$highRealConsumption = ($realUsage > $chargerRealUsageBlock);
 	$charged		 	 = ($pauseCharging && $pauseMarstekCharging);
 	
 	if (
@@ -208,6 +209,7 @@
 		!$battery_calibrated && 
 		!$chargeLossCalculation &&
 		!$highConsumption &&
+		!$highRealConsumption &&
 		!$charged
 	) {
 		$vars['keepChargersOff'] = false;
@@ -374,11 +376,10 @@
 		
 	} elseif ($isDownscaling && !$highConsumption) {
 		$currentPendingType = 'downscale';
-		$chargerPause = ($chargerPause * 2);
 		
 	} elseif ($isDownscaling && $highConsumption) {
 		$currentPendingType = 'downscale';
-		$chargerPause = 30;
+		$chargerPause = ($chargerPause / 2);
 	}
 		
 	$chargerPauseNeeded = ($currentPendingType !== null);

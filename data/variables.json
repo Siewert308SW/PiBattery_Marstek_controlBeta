@@ -9,16 +9,16 @@
     "bmsWakeActive": false,
     "invInjection": false,
     "marstek_force_mode": "discharge",
+    "oldBaseload": 0,
+    "baseload_idle_until": 0,
     "charge_session": {
-        "chargeStart": 2678.95,
-        "chargeCalibrated": 2671.27,
-        "dischargeStart": 2150.422
+        "chargeStart": 2697.726,
+        "chargeCalibrated": 2690.046,
+        "dischargeStart": 2164.608
     },
     "charging_loss": {
-        "chargeStart": 2678.95,
-        "dischargeStart": 2150.422
+        "chargeStart": 2697.726,
+        "dischargeStart": 2164.608
     },
-    "charger_loss_dynamic": 0.24170968135348528,
-    "oldBaseload": 0,
-    "baseload_idle_until": 0
+    "charger_loss_dynamic": 0.2381992621721499
 }

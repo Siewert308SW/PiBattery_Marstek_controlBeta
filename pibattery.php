@@ -205,6 +205,7 @@
 		printRow("Batterij laden geblokkeerd", ($keepChargersOff ? "Actief" : "Niet actief"));
 		printRow("Batterij ontladen geblokkeerd", ($forceBaseloadNull ? "Actief" : "Niet actief"));
 		printRow("High Consumption", ($highConsumption ? "Actief" : "Niet actief"));
+		printRow("High Real Consumption", ($highRealConsumption ? "Actief" : "Niet actief"));
 		echo ' '.PHP_EOL;
 		
 // === Print additional debugMsg
@@ -278,12 +279,8 @@
 		        'Nieuwe baseload' => ($newBaseload / 10),
 		        'Delta target' => ($delta / 10),
 				'updateBaseload' => $updateNeeded,
-				'faseProtect' => $faseProtect,
-				'highConsumption' => $highConsumption
+				'faseProtect' => $faseProtect
 			];
-		
-		// Bewaar alleen de laatste 20 runs
-		//if (count($runTimerVars) > 20) array_shift($runTimerVars);
 		
 		writeJsonLocked($runTimerFile, $runTimerVars);
 	}
