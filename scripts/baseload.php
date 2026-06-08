@@ -20,23 +20,23 @@
 		$activeInverters['marstek'] = $marstekMax;
 	}
 
-	$totalMaxOutput = array_sum($activeInverters) / 10;
+	$activeMaxOutput = array_sum($activeInverters) / 10;
 
 // = -------------------------------------------------	
 // = Calculate new baseload
 // = -------------------------------------------------
 	$solarBuffer = ($hwSolarReturn < -500) ? ($baseloadSolarBuffer) : 0;
 	
-	if ($hwP1Usage < $totalMaxOutput){
-		$newBaseloadRef = round(min($totalMaxOutput, max(0, ($hwP1Usage + $currentBaseload + $solarBuffer))) * 10);
-	} elseif ($hwP1Usage >= $totalMaxOutput){
-		$newBaseloadRef = round($totalMaxOutput * 10);
+	if ($hwP1Usage < $activeMaxOutput){
+		$newBaseloadRef = round(min($activeMaxOutput, max(0, ($hwP1Usage + $currentBaseload + $solarBuffer))) * 10);
+	} elseif ($hwP1Usage >= $activeMaxOutput){
+		$newBaseloadRef = round($activeMaxOutput * 10);
 	}
 
 	$newBaseload = floor(($newBaseloadRef) / 10) * 10;
 	
 // = -------------------------------------------------
-// = Idle: Keep inverters idle x minutes after injection stops
+// = Idle: Keep inverters idle x minutes after injection stops 
 // = -------------------------------------------------
 	$baseloadIdle 			= false;
 	$baseloadIdleOverride 	= false;
@@ -54,8 +54,16 @@
 		$varsChanged = true;
 
 // === Start idle timer
-	} elseif ($newBaseload <= ($ecoflowMinOutput * 10) && $currentTimestamp >= $baseloadIdleUntil && $oldBaseload > $ecoflowMinOutput) {
+	} elseif ($usePiBattery && $newBaseload <= ($ecoflowMinOutput * 10) && $currentTimestamp >= $baseloadIdleUntil && $oldBaseload > $ecoflowMinOutput) {
 		$vars['baseload_idle_until'] = $currentTimestamp + $baseloadIdleTimeout;
+		$baseloadIdleUntil = $vars['baseload_idle_until'];
+		$baseloadIdle = true;
+		$newBaseload = ($ecoflowMinOutput * 10);
+		$varsChanged = true;
+		debugMsg('Idle timer gestart: omvormers blijven ' . $baseloadIdleTimeout . 's op minimaal vermogen');
+		
+	} elseif (!$usePiBattery && $newBaseload <= ($ecoflowMinOutput * 10) && $currentTimestamp >= $baseloadIdleUntil && $oldBaseload > $ecoflowMinOutput) {
+		$vars['baseload_idle_until'] = $currentTimestamp + 60;
 		$baseloadIdleUntil = $vars['baseload_idle_until'];
 		$baseloadIdle = true;
 		$newBaseload = ($ecoflowMinOutput * 10);
@@ -118,7 +126,11 @@
 		$baseloadIdleOverride = true;
 		
 		if ($debug == 'yes' && $isManualRun){
-			debugMsg('Ontladen geblokkeerd: Batterij is aan het opladen');
+			if ($hwMarstekUsage >= 1) {
+			debugMsg('Ontladen geblokkeerd: Marstek is aan het opladen');
+			} else {			
+			debugMsg('Ontladen geblokkeerd: piBatterij is aan het opladen');
+			}
 		}
 	}
 	
@@ -166,12 +178,12 @@
 		}
 	}
 	
-	if(!$usePiBattery && $batteryPct > $batteryEmptyRecoveryPct && isset($vars['piBattery_empty'])){
+	if(!$usePiBattery && $batteryPct > ($batteryMinimum + 10) && isset($vars['piBattery_empty'])){
 		unset($vars['piBattery_empty']);
 		$varsChanged = true;
 	}
 	
-	if(!$useMarstek && $marstekBatSoc > $batteryEmptyRecoveryPct && isset($vars['marstek_empty'])){
+	if(!$useMarstek && $marstekSoc > ($batteryMinimum + 10) && isset($vars['marstek_empty'])){
 		unset($vars['marstek_empty']);
 		$varsChanged = true;
 	}
@@ -221,10 +233,6 @@
 // = Check if baseload needs to be updated
 // = -------------------------------------------------
 	$updateNeeded = false;
-
-	$baseloadPosDelta = ($hwSolarReturn < -500) ? (50) : $baseloadPosDelta;
-	$baseloadNegDelta = ($hwSolarReturn < -500) ? (150) : $baseloadNegDelta;
-			
 	$delta = abs($newBaseload - abs($hwInvReturn * 10));
 	
 	if($hwP1Usage > 0){
@@ -253,7 +261,6 @@
 			$vars['invInjection'] = true;	
 			}
 		}
-
 
 // === Force baseload null #failsave
 	} elseif (!$isManualRun && $forceBaseloadNull == true && $baseloadIdle == false && $hwInvReturn < 0) {	

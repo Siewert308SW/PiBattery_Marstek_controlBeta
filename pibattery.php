@@ -31,6 +31,7 @@
 	$timeStamp 				= time();
 	$currentTime 			= date('H:i');
 	$dateNow 				= date('Y-m-d H:i:s');
+	$runStartTime 			= microtime(true);
 	$piBatteryPath 			= __DIR__ . '/';
 	$varsTimerFile 			= $piBatteryPath . 'data/timeStamp.json';
 	$bootStrapFile			= $piBatteryPath . 'bootstrap/bootstrap.php';
@@ -56,13 +57,11 @@
 	if (!$isManualRun) {
 		$lockFile = $piBatteryPath . 'data/pibattery.lock';
 		if (file_exists($lockFile)) {
-			if ((time() - filemtime($lockFile)) < 30) {
+			if ((time() - filemtime($lockFile)) < 10) {
 				exit;
 			}
 		}
 		touch($lockFile);
-		
-		$runStartTime = microtime(true);
 	}
 	
 // = -------------------------------------------------
@@ -81,7 +80,6 @@
 			$runBaseload = true;
 			$runBootstrap = true;
 		}
-		
 	}
 	
 // = -------------------------------------------------
@@ -116,10 +114,9 @@
 		echo '  --            '.$totalCapacitykWh.' kWh Solar Storage             --'.PHP_EOL;
 		echo '  ---------------------------------------------------'.PHP_EOL;
 		echo ' '.PHP_EOL;
-		
+
 // === Print Batterij Status		
-		echo " -/- PiBatterij                      -\-".PHP_EOL;
-		printRow("Batterij actief", ($usePiBattery ? 'Ja' : 'Nee'), '');
+		echo " -/- piBatterij                      -\-".PHP_EOL;
 		printRow('Batterij SOC', $batteryPct, '%');
 		printRow('Batterij voltage', $pvAvInputVoltage, 'Volt');
 		printRow('Batterij beschikbaar', round($batteryAvailable, 2), 'kWh');
@@ -136,21 +133,19 @@
 
 // === Print Marstek Status 
 		echo " -/- Marstek                         -\-".PHP_EOL;
-		printRow("Marstek actief", ($useMarstek ? 'Ja' : 'Nee'), '');
-		printRow('Batterij SOC', $marstekBatSoc, '%');
-		printRow('Batterij voltage', $marstekBatVolt, 'Volt');
+		printRow('Batterij SOC', $marstekSoc, '%');
+		printRow('Batterij voltage', $marstekVoltage, 'Volt');
 		printRow('Batterij beschikbaar', round($marstekAvailable, 2), 'kWh');
 		printRow('Batterij RTE',  round($marstekRTE, 1), '%');
 		printRow('Batterij Temperatuur', $marstekTemp, '°C');
 		
-		if ($hwMarstekSocket > 9 && $marstekBatSoc < 100) {
-			printRow('Geschatte oplaadtijd '.round($marstekBatSoc,0).'% > 100%', $realMarstekChargeTime, 'u/m');
+		if ($hwMarstekSocket > 9 && $marstekSoc < 100) {
+			printRow('Geschatte oplaadtijd '.round($marstekSoc,0).'% > 100%', $realMarstekChargeTime, 'u/m');
 		}
 		
-		if ($hwMarstekSocket < 0 && $marstekBatSoc > $marstekMinimum) {
-			printRow('Geschatte ontlaadtijd '.$marstekMinimum.'% < '.round($marstekBatSoc,0).'%', $realMarstekDischargeTime, 'u/m');
+		if ($hwMarstekSocket < 0 && $marstekSoc > $marstekMinimum) {
+			printRow('Geschatte ontlaadtijd '.$marstekMinimum.'% < '.round($marstekSoc,0).'%', $realMarstekDischargeTime, 'u/m');
 		}
-
 		echo ' '.PHP_EOL;
 		
 // === Print Energie Status		
@@ -159,6 +154,7 @@
 		printRow('P1-Meter', $hwP1Usage, 'Watt');
 		printRow('Zonnepanelen opwek', $hwSolarReturn, 'Watt');
 		printRow('Batterij opwek', $hwInvReturn, 'Watt');
+		printRow('Totaal beschikbare overschot', $grossAvailableSolarPower, 'Watt');
 		echo ' '.PHP_EOL;
 
 // === Print Charger Status	
@@ -178,34 +174,16 @@
 		printRow('Marstek #1 Output', $hwMarstekReturn, 'Watt');
 		echo ' '.PHP_EOL;
 		
-// === Print Surplus/P1 Available
-		echo ' -/- Overschot                       -\-'.PHP_EOL;
-		printRow('Beschikbaar overschot totaal', $grossAvailableSolarPower, 'Watt');
-		printRow('Marstek target', $marstekChargerTarget, 'Watt');
-		printRow('Marstek werkelijk', $hwMarstekUsage, 'Watt');
-		printRow('Marstek delta', $marstekDelta, 'Watt');
-		printRow('Resterend t.b.v piBattery', $availableSolarPower, 'Watt');
-		echo ' '.PHP_EOL;
-		
-// === Print Baseload
-		echo ' -/- Baseload                        -\-'.PHP_EOL;
-		printRow('Ingestelde baseload', $currentBaseload, 'Watt');
-		printRow('Gemeten output', abs($hwInvReturn), 'Watt');
-		printRow('Nieuwe baseload', ($newBaseload / 10), 'Watt');
-		printRow('Delta target/gemeten', ($delta / 10), 'Watt');
-		printRow('Baseload update nodig', ($updateNeeded ? 'true' : 'false'));
-		echo ' '.PHP_EOL;
-	
 // === Print Various
 		echo ' -/- Various                         -\-'.PHP_EOL;
-		printRow('Batterij laad pauze '.$chargerPausePct.'% <-> 100%', ($pauseCharging ? 'Actief' : 'Niet actief'));
+		printRow("piBattery actief", ($usePiBattery ? 'Ja' : 'Nee'), '');
+		printRow("Marstek actief", ($useMarstek ? 'Ja' : 'Nee'), '');
+		printRow('piBattery laad pauze '.$chargerPausePct.'% <-> 100%', ($pauseCharging ? 'Actief' : 'Niet actief'));
 		printRow('Marstek laad pauze '.$chargerPausePct.'% <-> 100%', ($pauseMarstekCharging ? 'Actief' : 'Niet actief'));
 		printRow("BMS bescherming", ($bmsWakeActive ? "Actief" : "Niet actief"));
 		printRow("Fase {$fase} bescherming", ($faseProtect ? "Actief" : "Niet actief"));
-		printRow("Batterij laden geblokkeerd", ($keepChargersOff ? "Actief" : "Niet actief"));
-		printRow("Batterij ontladen geblokkeerd", ($forceBaseloadNull ? "Actief" : "Niet actief"));
-		printRow("High Consumption", ($highConsumption ? "Actief" : "Niet actief"));
-		printRow("High Real Consumption", ($highRealConsumption ? "Actief" : "Niet actief"));
+		printRow("Laden geblokkeerd", ($keepChargersOff ? "Actief" : "Niet actief"));
+		printRow("Ontladen geblokkeerd", ($forceBaseloadNull ? "Actief" : "Niet actief"));
 		echo ' '.PHP_EOL;
 		
 // === Print additional debugMsg
@@ -217,7 +195,6 @@
 		} else {
 			echo '  ~~ Geen berichten'.PHP_EOL;	
 		}
-
 	}
 
 // = WritePiJson
@@ -238,7 +215,6 @@
 		if ($lockChanged) {
 			writeJsonLocked($chargerLockFile, $chargerLockFileVars);
 		}
-		
 	}
 	
 // = -------------------------------------------------
@@ -251,7 +227,6 @@
 // = -------------------------------------------------
 // = Run Timer Write
 // = -------------------------------------------------
-
 	if (!$isManualRun && $runtimeDebug == 'yes') {
 		$runEndTime  = microtime(true);
 		$runDuration = round($runEndTime - $runStartTime, 3);

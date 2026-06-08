@@ -11,6 +11,8 @@
 // = -------------------------------------------------	
 // === Set Pause
 	if (!$isManualRun && (($vars['pauseCharging'] ?? false) !== true) && $hwChargerUsage >= 0 && $hwChargerUsage <= $chargerWattsIdle && $pvAvInputVoltage >= $batteryVoltMax) {
+		$pauseCharging = true;
+		$battery_awaitingCalibration = true;
 		$vars['pauseCharging'] = true;
 		$vars['battery_awaitingCalibration'] = true;
 		$varsChanged = true;
@@ -26,7 +28,7 @@
 	}
 
 // === End pause
-	if (!$isManualRun && (($vars['pauseCharging'] ?? true) !== false) && $batteryPct <= $chargerPausePct && $hwInvReturn == 0) {
+	if (!$isManualRun && (($vars['pauseCharging'] ?? true) !== false) && $batteryPct <= $chargerPausePct && $hwInvReturn == 0) { // && $hwInvReturn == 0
 		$vars['pauseCharging'] = false;
 		$vars['pauseMarstekCharging'] = false;
 		$varsChanged = true;
@@ -35,8 +37,9 @@
 // = -------------------------------------------------	
 // = Set Marstek charging pause when battery charged 100%
 // = -------------------------------------------------	
-// === Set Pause including failsave due to buggy Marstek API
-	if (!$isManualRun && (($vars['pauseMarstekCharging'] ?? false) !== true) && $marstekBatSoc == 100 && $hwMarstekSocket >= 0 && $hwMarstekSocket < 15) {
+// === Set Pause
+	if (!$isManualRun && (($vars['pauseMarstekCharging'] ?? false) !== true) && $marstekSoc == 100 && $hwMarstekSocket >= 0 && $hwMarstekSocket < 15) {
+		$pauseMarstekCharging = true;
 		$vars['pauseMarstekCharging'] = true;
 		$vars['marstek_force_mode'] = '';
 		$varsChanged = true;
@@ -45,7 +48,7 @@
 	}
 	
 // === End pause
-	if (!$isManualRun && (($vars['pauseMarstekCharging'] ?? true) !== false) && $marstekBatSoc <= $chargerPausePct && $hwInvReturn == 0) { 
+	if (!$isManualRun && (($vars['pauseMarstekCharging'] ?? true) !== false) && $marstekSoc <= $chargerPausePct && $batteryPct <= $chargerPausePct && $hwInvReturn == 0) { // && $hwInvReturn == 0
 		$vars['pauseMarstekCharging'] = false;
 		$vars['pauseCharging'] = false;
 		$vars['marstek_force_mode'] = '';
@@ -55,136 +58,131 @@
 // = -------------------------------------------------	
 // = Batt% variable calibration
 // = -------------------------------------------------
+	if ($pvAvInputVoltage >= $batteryVoltMax && $pauseCharging && !isset($vars['battery_awaitingCalibration']) && !$isManualRun && !isset($vars['battery_calibrated'])) {
+			$varsChanged = true;
+			$vars['battery_awaitingCalibration'] = true;
+	}
+		
+	if ($pvAvInputVoltage >= $batteryVoltMax && $pauseCharging && !$isManualRun
+		&& $hwChargerOneStatus == 'Off' && $hwChargerTwoStatus == 'Off' && $hwChargerThreeStatus == 'Off' && $hwChargerFourStatus == 'Off'
+		&& (!isset($vars['battery_calibrated']) || $vars['battery_calibrated'] !== true)
+		) {
 
-		if ($pvAvInputVoltage >= $batteryVoltMax && $pauseCharging && !isset($vars['battery_awaitingCalibration']) && !$isManualRun && !isset($vars['battery_calibrated'])) {
-				$varsChanged = true;
-				$vars['battery_awaitingCalibration'] = true;
-		}
-			
-		if ($pvAvInputVoltage >= $batteryVoltMax && $pauseCharging && !$isManualRun
-			&& $hwChargerOneStatus == 'Off' && $hwChargerTwoStatus == 'Off' && $hwChargerThreeStatus == 'Off' && $hwChargerFourStatus == 'Off'
-			&& (!isset($vars['battery_calibrated']) || $vars['battery_calibrated'] !== true)
-			) {
-
-			$chargeStart  		= round($hwChargersTotalInput, 7);
-			$chargeCalibrated	= round($hwChargersTotalInput - $batteryCapacitykWh, 7);
-			$dischargeStart 	= round($hwInvTotal, 7);
+		$chargeStart  		= round($hwChargersTotalInput, 7);
+		$chargeCalibrated	= round($hwChargersTotalInput - $batteryCapacitykWh, 7);
+		$dischargeStart 	= round($hwInvTotal, 7);
 
 // = Start Charge Loss Calculation
-		if (!isset($vars['charge_loss_calculation']) || $vars['charge_loss_calculation'] !== true){
-			$vars['charging_loss'] = [
-				'chargeStart' => $chargeStart,
-				'dischargeStart' => $dischargeStart
-			];
+	if (!isset($vars['charge_loss_calculation']) || $vars['charge_loss_calculation'] !== true){
+		$vars['charging_loss'] = [
+			'chargeStart' => $chargeStart,
+			'dischargeStart' => $dischargeStart
+		];
 			
-			$vars['charge_loss_calculation'] = true;
-			unset($vars['battery_awaitingCalibration']);
-			$varsChanged = true;			
-			return;
+		$vars['charge_loss_calculation'] = true;
+		unset($vars['battery_awaitingCalibration']);
+		$varsChanged = true;			
+		return;
 			
-		} elseif ($vars['charge_loss_calculation'] === true) {
-		
-			$chargedkWh    = $brutoCharged;
-			$dischargedkWh = $brutoDischarged;
+	} elseif ($vars['charge_loss_calculation'] === true) {
+
+		$chargedkWh    = $brutoCharged;
+		$dischargedkWh = $brutoDischarged;
 					
-			if ($chargedkWh > 1 && $dischargedkWh > 1 && $dischargedkWh <= $chargedkWh) {
-				$sessionLoss = 1 - ($dischargedkWh / $chargedkWh);
+		if ($chargedkWh > 0 && $dischargedkWh > 0 && $dischargedkWh <= $chargedkWh) {
+			$sessionLoss = 1 - ($dischargedkWh / $chargedkWh);
 
 // === Log session only if new
-			$sessionFile = $piBatteryPath . 'data/charge_sessions.json';
-			$newSession = [
-			'charged'     		 => round($chargedkWh, 7),
-			'discharged'     	 => round($dischargedkWh, 7),
-			'loss'        		 => round($sessionLoss, 7)
-			];
+		$sessionFile = $piBatteryPath . 'data/charge_sessions.json';
+		$newSession = [
+		'charged'     		 => round($chargedkWh, 7),
+		'discharged'     	 => round($dischargedkWh, 7),
+		'loss'        		 => round($sessionLoss, 7)
+		];
 
-			$sessions = [];
-			$skipSession = false;
+		$sessions = [];
+		$skipSession = false;
 
-			if (file_exists($sessionFile)) {
-				$sessions = json_decode(file_get_contents($sessionFile), true);
-				if (!is_array($sessions)) $sessions = [];
+		if (file_exists($sessionFile)) {
+			$sessions = json_decode(file_get_contents($sessionFile), true);
+			if (!is_array($sessions)) $sessions = [];
 
 // === Check id session is identical to the latest session
-				$lastSession = end($sessions);
-				if (
-					isset($lastSession['charged'], $lastSession['discharged']) &&
-					$newSession['charged'] === $lastSession['charged'] &&
-					$newSession['discharged'] === $lastSession['discharged']
-					) {
-					$skipSession = true;
-					}
+			$lastSession = end($sessions);
+			if (
+				isset($lastSession['charged'], $lastSession['discharged']) &&
+				$newSession['charged'] === $lastSession['charged'] &&
+				$newSession['discharged'] === $lastSession['discharged']
+				) {
+				$skipSession = true;
 				}
+			}
 
-				if (!$skipSession) {
-					$sessions[] = $newSession;
+			if (!$skipSession) {
+				$sessions[] = $newSession;
 
 // === Remove oldest session				
-			if (count($sessions) > $chargeSessions) {
-			array_shift($sessions);
-			}	
-			writeJsonLocked($sessionFile, $sessions);
-			}
+		if (count($sessions) > $chargeSessions) {
+		array_shift($sessions);
+		}	
+		writeJsonLocked($sessionFile, $sessions);
+		}
 
 // === Calculate session average
-			$losses = [];
-			foreach ($sessions as $s) {
-				if (isset($s['charged'], $s['discharged']) &&
-					$s['charged'] > 0 &&
-					$s['discharged'] > 0 &&
-					$s['charged'] >= $s['discharged']
-					) {
-					$loss = 1 - ($s['discharged'] / $s['charged']);
-					$losses[] = $loss;
-				}
-			}
-
-			if (count($losses) >= $chargeSessions) {
-				$chargerLoss = array_sum($losses) / count($losses);
-				if ($chargerLoss != $vars['charger_loss_dynamic']) {
-				$varsChanged = true;
-				$vars['charger_loss_dynamic'] = $chargerLoss;
-				}
-			}
-			
-				if (isset($vars['charge_loss_calculation'])) {
-					$varsChanged = true;
-					unset($vars['charge_loss_calculation']);
-					
-					if (isset($vars['battery_empty'])) {
-						unset($vars['battery_empty']);
-						$varsChanged = true;
-					}
-					
-				}
-		
+		$losses = [];
+		foreach ($sessions as $s) {
+			if (isset($s['charged'], $s['discharged']) &&
+				$s['charged'] > 0 &&
+				$s['discharged'] > 0 &&
+				$s['charged'] >= $s['discharged']
+				) {
+				$loss = 1 - ($s['discharged'] / $s['charged']);
+				$losses[] = $loss;
 			}
 		}
+
+		if (count($losses) >= $chargeSessions) {
+			$chargerLoss = array_sum($losses) / count($losses);
+			if ($chargerLoss != $vars['charger_loss_dynamic']) {
+			$varsChanged = true;
+			$vars['charger_loss_dynamic'] = $chargerLoss;
+			}
+		}
+			
+			if (isset($vars['charge_loss_calculation'])) {
+				$varsChanged = true;
+				unset($vars['charge_loss_calculation']);
+					
+				if (isset($vars['battery_empty'])) {
+					unset($vars['battery_empty']);
+					$varsChanged = true;
+				}
+			}
+		}
+	}
 
 // = End Charge Loss calculation
-			$varsChanged = true;
-			$vars['charge_session'] = [
-				'chargeStart'     => $chargeStart,
-				'chargeCalibrated'=> $chargeCalibrated,
-				'dischargeStart'  => $dischargeStart
-			];
+		$varsChanged = true;
+		$vars['charge_session'] = [
+			'chargeStart'     => $chargeStart,
+			'chargeCalibrated'=> $chargeCalibrated,
+			'dischargeStart'  => $dischargeStart
+		];
 				
-			$vars['battery_calibrated'] = true;
-			unset($vars['battery_awaitingCalibration']);
-			$varsChanged = true;
-		}
+		$vars['battery_calibrated'] = true;
+		unset($vars['battery_awaitingCalibration']);
+		$varsChanged = true;
+	}
 
-		if (isset($vars['battery_calibrated']) && $pvAvInputVoltage < $batteryVoltMax) {
-			unset($vars['battery_calibrated']);
-			$varsChanged = true;
-		}
+	if (isset($vars['battery_calibrated']) && $pvAvInputVoltage < $batteryVoltMax) {
+		unset($vars['battery_calibrated']);
+		$varsChanged = true;
+	}
 		
 // = -------------------------------------------------
 // = Keep chargers OFF #failsaves
 // = -------------------------------------------------
-	$highConsumption 	 = ($hwP1Usage > $chargerP1Block);
-	$highRealConsumption = ($realUsage > $chargerRealUsageBlock);
-	$charged		 	 = ($pauseCharging && $pauseMarstekCharging);
+	$charged = ($pauseCharging && $pauseMarstekCharging);
 	
 	if (
 		!$keepChargersOff &&
@@ -194,10 +192,10 @@
 			isset($vars['battery_awaitingCalibration']) ||
 			$battery_calibrated || 
 			$chargeLossCalculation ||
-			$highConsumption ||
 			$charged
 		)
 	) {
+		$keepChargersOff = true;
 		$vars['keepChargersOff'] = true;
 		$varsChanged = true;
 
@@ -208,20 +206,53 @@
 		!isset($vars['battery_awaitingCalibration']) &&
 		!$battery_calibrated && 
 		!$chargeLossCalculation &&
-		!$highConsumption &&
-		!$highRealConsumption &&
 		!$charged
 	) {
+		$keepChargersOff = false;
 		$vars['keepChargersOff'] = false;
 		$varsChanged = true;
+	}
+
+// = -------------------------------------------------
+// = Determine available PV surplus
+// = -------------------------------------------------
+	$grossAvailableSolarPower = 0;
+	if ($pauseMarstekCharging) {
+	$grossAvailableSolarPower = max(0, -$P1ChargerUsage);		
+	} else {
+	$grossAvailableSolarPower = max(0, -$P1ChargerUsage - $chargerhyst);
+	}
+
+// = -------------------------------------------------
+// = Marstek dynamic charger
+// = -------------------------------------------------
+	$marstekChargerTarget = 0;
+	if (!$pauseMarstekCharging && !$keepChargersOff && !$bmsWakeActive) {
+		if ($grossAvailableSolarPower >= ($marstekChargerMin + $marstekChargerStep)) {
+			$rounded = floor($grossAvailableSolarPower / $marstekChargerStep) * $marstekChargerStep;
+			$marstekChargerTarget = min($marstekChargerMax, max($marstekChargerMin, $rounded - $marstekChargerStep));
+		}
+	}
+
+// === Update Marstek
+	$marstekDelta = abs($marstekChargerTarget - $hwMarstekUsage);
+	if ($marstekDelta >= $marstekChargerStep) {
+		if (!$isManualRun) {
+			setMarstekUsage($marstekChargerTarget);
+		}
+	}
+
+// === Marstek fully charged? then give remaining surplus to piBattery
+	if ($pauseMarstekCharging) {		
+	$availableSolarPower = floor($grossAvailableSolarPower);
+	} else {		
+	$availableSolarPower = 0;
 	}
 
 // = -------------------------------------------------
 // = Get chargers total usage
 // = -------------------------------------------------
 	$currentTotal = 0;
-
-// = Get status for all chargers
 	foreach ($chargers as $name => &$data) {
 		$data['status'] = getHwStatus($data['ip']);
 		if ($data['status'] === 'On') {
@@ -229,49 +260,6 @@
 		}
 	}
 	unset($data);
-
-// = -------------------------------------------------
-// = Determine available PV surplus
-// = -------------------------------------------------
-	$grossAvailableSolarPower = 0;
-
-	if (!$pauseMarstekCharging) {
-	$grossAvailableSolarPower = max(0, -$P1ChargerUsage - $solarSurplusMargin);		
-	} elseif ($pauseMarstekCharging) {
-	$grossAvailableSolarPower = max(0, -$P1ChargerUsage - $chargerhyst);		
-	}
-
-// = -------------------------------------------------
-// = Marstek dynamic charger
-// = -------------------------------------------------
-	$marstekChargerTarget = 0;
-	$marstekAvailableP1   = $grossAvailableSolarPower;
-
-	if (!$pauseMarstekCharging && !$keepChargersOff && !$bmsWakeActive) {
-		if ($grossAvailableSolarPower >= $marstekChargerStep) {
-			$rounded = floor($grossAvailableSolarPower / $marstekChargerStep) * $marstekChargerStep;
-			$marstekChargerTarget = min($marstekChargerMax, max($marstekChargerMin, $rounded - $marstekChargerStep));
-		}
-	}
-
-	$marstekDelta = abs($marstekChargerTarget - $hwMarstekUsage);
-
-// === Update Marstek
-	if ($marstekDelta >= $marstekChargerStep) {
-			
-		if (!$isManualRun) {
-			setMarstekUsage($marstekChargerTarget);
-		}
-		
-	}
-
-// === Use actual/applied Marstek power for remaining solar 
-	$marstekAvailableP1 = max(0, $grossAvailableSolarPower - $hwMarstekUsage);
-	if ($pauseMarstekCharging) {		
-	$availableSolarPower = $marstekAvailableP1;
-	} else {		
-	$availableSolarPower = 0;
-	}
 	
 // = -------------------------------------------------
 // = Find master charger
@@ -355,11 +343,26 @@
 	$bestCombi = $validCombinations[0]['names'] ?? [];
 	$bestTotal = $validCombinations[0]['total'] ?? 0;
 
+// = -------------------------------------------------
+// = Determin is current bestCombi is still within surplus
+// = -------------------------------------------------
+	$currentCombi = [];
+	foreach ($chargers as $name => $data) {
+		if ($data['status'] === 'On') {
+			$currentCombi[] = $name;
+		}
+	}
+	$currentCombiTotal = array_sum(array_map(fn($n) => $chargers[$n]['power'], $currentCombi));
+	$grossAvailableWithoutHyst = max(0, -$P1ChargerUsage + ($chargerhyst / 2));
+
+	if (!empty($currentCombi) && in_array($masterName, $currentCombi) && $currentCombiTotal <= $grossAvailableWithoutHyst && $bestTotal < $currentCombiTotal) {
+		$bestCombi = $currentCombi;
+		$bestTotal = $currentCombiTotal;
+	}
+	
 	if ($debug == 'yes' && $isManualRun && !$bmsWakeActive) {
 		if (!empty($bestCombi) && !$keepChargersOff) {
-			debugMsg("Beste lader combinatie - " . implode(', ', $bestCombi) . " ({$bestTotal}W)");
-		} else {
-			debugMsg("Geen geldige lader combinatie gevonden");
+			debugMsg("Beste lader combinatie - " . implode(', ', $bestCombi) . "");
 		}
 	}
 
@@ -368,18 +371,13 @@
 // = -------------------------------------------------
 	$isUpscaling 		= ($bestTotal > $currentTotal);
 	$isDownscaling 		= ($bestTotal < $currentTotal);
-	$isMinimumCombi 	= empty($bestCombi) || $bestCombi === [$masterName];
 	$currentPendingType = null;
 
-	if ($isUpscaling && $hwChargersUsage == 0) {
+	if ($isUpscaling) {
 		$currentPendingType = 'upscale';
 		
-	} elseif ($isDownscaling && !$highConsumption) {
+	} elseif ($isDownscaling && empty($bestCombi)) {
 		$currentPendingType = 'downscale';
-		
-	} elseif ($isDownscaling && $highConsumption) {
-		$currentPendingType = 'downscale';
-		$chargerPause = ($chargerPause / 2);
 	}
 		
 	$chargerPauseNeeded = ($currentPendingType !== null);
@@ -439,7 +437,7 @@
 			
 		$chargerToggleAllowed = true;			
 
-		if ($vars['charger_pending_switch'] == true && !$isManualRun) {
+		if ($pendingSwitch && !$isManualRun) {
 		$varsChanged = true;		
 		$vars['charger_pending_switch'] = false;
 		unset($vars['charger_pause_until']);
@@ -450,9 +448,9 @@
 		$newPauseUntil = time() + $chargerPause;
 		if (
 			($vars['charger_pause_until'] ?? 0) !== $newPauseUntil ||
-			($vars['charger_pending_switch'] ?? false) !== true && !$isManualRun
+			(!$pendingSwitch && !$isManualRun)
 		) {
-			if ($vars['charger_pending_switch'] == false) {
+			if (!$pendingSwitch) {
 			$varsChanged = true;	
 			$vars['charger_pause_until'] = $newPauseUntil;
 			$vars['charger_pending_switch'] = true;
@@ -499,7 +497,7 @@
 	}
 
 // === Reset Pause
-	if ($chargerToggleNeeded == false && $vars['charger_pending_switch'] == true && !$isManualRun) {
+	if ($chargerToggleNeeded == false && $pendingSwitch && !$isManualRun) {
 		$varsChanged = true;		
 		$vars['charger_pending_switch'] = false;
 		unset($vars['charger_pause_until']);

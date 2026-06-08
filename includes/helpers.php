@@ -7,40 +7,6 @@
 //
 
 // = -------------------------------------------------
-// = API / Modbus beschikbaarheid check
-// = -------------------------------------------------
-/*
-	if (!$isManualRun) {
-			$EcoflowOnline = false;
-			$MarstekOnline = false;
-		if (!isset($invOne['data']) || !isset($invTwo['data'])) {
-			debugMsg('EcoFlow API niet beschikbaar, systeem geblokkeerd');
-			//switchHwSocket('invOne', 'Off');
-			//switchHwSocket('invTwo', 'Off');
-			//switchHwSocket('one', 'Off');
-			//switchHwSocket('two', 'Off');
-			//switchHwSocket('three', 'Off');
-			//switchHwSocket('four', 'Off');
-			//unlink($lockFile);
-			//exit;
-			$EcoflowOnline = true;
-		}
-
-		if (!$marstekData['online']) {
-			debugMsg('Marstek Modbus niet beschikbaar, systeem geblokkeerd');
-			//switchHwSocket('four', 'Off');
-			//switchHwSocket('three', 'Off');
-			//switchHwSocket('two', 'Off');
-			//switchHwSocket('one', 'Off');
-			//unlink($lockFile);
-			//exit;
-			$MarstekOnline = true;
-		}
-	}
-*/	
-
-
-// = -------------------------------------------------
 // = Fase Protection
 // = -------------------------------------------------
 	if ($runCharger && !$isManualRun){
@@ -91,7 +57,7 @@
 	}
 	
 // = -------------------------------------------------	
-// = Estimated charge time  || $runCharger
+// = Estimated charge time
 // = -------------------------------------------------
 
 // === piBattery ChargeTime till 100%
@@ -106,8 +72,8 @@
 		}
 		
 // === Marstek ChargeTime till 100%
-		if ($hwMarstekUsage > 0 && $marstekBatSoc < 100) {
-			$currentMarstekWh = ($marstekBatSoc / 100) * $marstekCapacityWh;
+		if ($hwMarstekUsage > 0 && $marstekSoc < 100) {
+			$currentMarstekWh = ($marstekSoc / 100) * $marstekCapacityWh;
 				
 			$neededMarstekWh = $marstekCapacityWh - $currentMarstekWh;
 			$neededMarstekWhAdjusted = $neededMarstekWh;
@@ -132,7 +98,7 @@
 		
 // === Marstek DischargeTime till minimum-SOC
 		if ($hwMarstekReturn < 0) {
-			$currentMarstekWh = ($marstekBatSoc / 100) * $marstekCapacityWh;
+			$currentMarstekWh = ($marstekSoc / 100) * $marstekCapacityWh;
 				
 			$minMarstekWh = ($marstekMinimum / 100) * $marstekCapacityWh;
 			$availableMarstekWh = $currentMarstekWh - $minMarstekWh;
@@ -147,7 +113,7 @@
 		
 		if (UpdateDomoticzDeviceIfChanged($batterySOCIDX, ''.$batteryPct.'') == 'OK') usleep(100000);
 
-		if (UpdateDomoticzDeviceIfChanged($marstekSOCIDX, ''.$marstekBatSoc.'') == 'OK') usleep(100000);
+		if (UpdateDomoticzDeviceIfChanged($marstekSOCIDX, ''.$marstekSoc.'') == 'OK') usleep(100000);
 
 		if (UpdateDomoticzDeviceIfChanged($marstekAvailIDX, ''.$marstekAvailable.'') == 'OK') usleep(100000);
 		
@@ -181,7 +147,7 @@
 
 // = -------------------------------------------------	
 
-		if ($hwMarstekUsage > 10 && $marstekBatSoc < 100) {
+		if ($hwMarstekUsage > 10 && $marstekSoc < 100) {
 			if (UpdateDomoticzDeviceIfChanged($marstekChargeTimeIDX, ''.$realMarstekChargeTime.'') == 'OK') usleep(100000);
 		} else {
 			if (UpdateDomoticzDeviceIfChanged($marstekChargeTimeIDX, '00:00') == 'OK') usleep(100000);
@@ -189,7 +155,7 @@
 
 // = -------------------------------------------------	
 
-		if ($hwMarstekReturn < 0 && $marstekBatSoc > $marstekMinimum) {
+		if ($hwMarstekReturn < 0 && $marstekSoc > $marstekMinimum) {
 			if (UpdateDomoticzDeviceIfChanged($marstekDischargeTimeIDX, ''.$realMarstekDischargeTime.'') == 'OK') usleep(100000);
 		} else {
 			if (UpdateDomoticzDeviceIfChanged($marstekDischargeTimeIDX, '00:00') == 'OK') usleep(100000);
@@ -197,9 +163,12 @@
 
 // = -------------------------------------------------	
 		
-		$chargerLossDomo = ($chargerLoss * 100);
 		if (UpdateDomoticzDeviceIfChanged($batteryRTEIDX, ''.$chargerRTE.'') == 'OK') usleep(100000);
 
+// = -------------------------------------------------	
+
+		if (UpdateDomoticzDeviceIfChanged($marstekRTEIDX, ''.$marstekRTE.'') == 'OK') usleep(100000);
+		
 // = -------------------------------------------------	
 		
 		if (UpdateDomoticzDeviceIfChanged($ecoFlowTempIDX, ''.$invTemp.'') == 'OK') usleep(100000);

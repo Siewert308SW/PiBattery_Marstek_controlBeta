@@ -54,29 +54,23 @@
 // = Lock files
 	$chargerLockFile        = $piBatteryPath . 'data/chargerLocked.json';
 	$chargerLockFileVars    = file_exists($chargerLockFile) ? json_decode(file_get_contents($chargerLockFile), true) : [];
-	$chargerLock 	  		= $chargerLockFileVars['chargerLocked'] ?? false;
 
 // = Domoticz State File
 	$domoticzStateFile 		= $piBatteryPath . 'data/domoticz_state.json';
 
-// = Get solar surplus history
-	$surplusHistoryFile 	= $piBatteryPath . 'data/surplusHistory.json';
-	$varsHist 				= file_exists($surplusHistoryFile) ? json_decode(file_get_contents($surplusHistoryFile), true) : [];
-	
 // = Marstek Variables
-	$marstekBatVolt 		= $marstekData['batteryVoltage'];
-	$marstekBatState 		= $marstekData['inverterState'];
-	$marstekBatSoc   	    = $marstekData['batterySoc'];
+	$marstekVoltage			= $marstekData['batteryVoltage'];
+	$marstekState 			= $marstekData['inverterState'];
+	$marstekSoc   	   		= $marstekData['batterySoc'];
 	$marstekAcPower		    = $marstekData['acPower'];
-	$marstekState		    = $marstekData['inverterState'];
 	$marstekTemp		    = $marstekData['batteryTemp'];
 	$marstekRTE		    	= $marstekData['lifetimeRte'];
 	
 	$hwMarstekSocket = getHwData($hwMarstekIP);
-	if ($hwMarstekSocket >= 0 && $hwMarstekSocket <= $marstekSocketThreshold) {
+	if ($hwMarstekSocket >= 0 && $hwMarstekSocket <= 10) {
 		$hwMarstekReturn = 0; 
 		$hwMarstekUsage = 0;
-	} elseif ($hwMarstekSocket > $marstekSocketThreshold) {
+	} elseif ($hwMarstekSocket > 10) {
 		$hwMarstekReturn = 0; 
 		$hwMarstekUsage = $hwMarstekSocket;		
 	} elseif ($hwMarstekSocket < 0) {
@@ -87,8 +81,6 @@
 // = HomeWizard GET Variables
 	$hwP1Usage              = getHwData($hwP1IP);
 	$hwP1Fase               = getHwP1FaseData($hwP1IP, $fase);
-	$hwP1Fase2              = getHwP1FaseData($hwP1IP, $fase2);
-	$hwP1Fase3              = getHwP1FaseData($hwP1IP, $fase3);
 	$hwSolarReturn          = getHwData($hwKwhIP);
 	$_hwInvOne              = getHwAll($hwEcoFlowOneIP);
 	$_hwInvTwo              = getHwAll($hwEcoFlowTwoIP);
@@ -140,8 +132,6 @@
 	$productionTotal        = ($hwSolarReturn + $hwInvReturn);	
 	$realUsage              = ($hwP1Usage - $productionTotal);
 	$P1ChargerUsage         = ($hwP1Usage - $hwChargerUsage);
-	$P1ChargerRef     		= ($P1ChargerUsage + $hwChargerUsage);
-	$P1ChargerAvailable     = ($P1ChargerRef < 0 && $hwInvReturn == 0 ? $P1ChargerRef : 0);
 	
 // = Get Inverter and charger real output
 	$hwInvOneTotal          = $_hwInvOne['total_export'];
@@ -164,7 +154,6 @@
 // = Various
 	$pauseUntil       		= $vars['charger_pause_until'] ?? 0;
 	$pendingSwitch 	  		= $vars['charger_pending_switch'] ?? false;
-	$baseloadPendingSwitch 	= $vars['baseloading_pending_switch'] ?? false;
 	$charger_pending_type 	= $vars['charger_pending_type'] ?? null;
 	$chargerLoss 			= round($vars['charger_loss_dynamic'] ?? $chargerLossDefault, 7);
 	$chargerRTE 			= round(100 - ($chargerLoss * 100), 1);	
@@ -173,11 +162,8 @@
 	$keepChargersOff 		= $vars['keepChargersOff'] ?? false;
 	$faseProtect	 		= $vars['faseProtect'] ?? false;
 	$chargeLossCalculation 	= $vars['charge_loss_calculation'] ?? false;
-	$pendingCharging		= $vars['charger_pending_switch'] ?? false;
 	$battery_calibrated		= $vars['battery_calibrated'] ?? false;
 	$bmsWakeActive  		= $vars['bmsWakeActive'] ?? false;
-	$battery_empty			= $vars['battery_empty'] ?? false;
-	$battery_allowed		= $vars['battery_allowed'] ?? false;
 	$invInjection			= $vars['invInjection'] ?? false;
 	$baseloadIdleUntil		= $vars['baseload_idle_until'] ?? 0;
 	
@@ -193,27 +179,21 @@
 	$dischargeEnd	 		= round($hwInvTotal, 3);
 
 	$brutoCharged			= round(($chargeEnd - $chargeStart), 3);
-	$nettoCharged			= round(($chargeEnd - $chargeCalibrated), 3);
 	$brutoDischarged 		= round(($dischargeEnd - $dischargeStart), 3);
 	$batteryAvailable	    = round((($batteryCapacitykWh) - ($brutoDischarged - ($brutoCharged  * (1 - $chargerLoss)))), 2);
 	$marstekCapacitykWh	    = round(($marstekVolt * $marstekAh / 1000), 2);
 	$marstekCapacityWh 		= ($marstekCapacitykWh * 1000);
-	$marstekAvailable	    = round(($marstekCapacitykWh / 100 * $marstekBatSoc), 2);
+	$marstekAvailable	    = round(($marstekCapacitykWh / 100 * $marstekSoc), 2);
 	$batteryPct 			= round(($batteryAvailable / $batteryCapacitykWh) * 100, 0);
 
 	$battery_emptyTime 		= $vars['battery_empty_time'] ?? time();
-	$hoursSinceEmpty 		= round((time() - $battery_emptyTime) / 3600, 1);	
-
 	$battery_bmsWake_time 	= $vars['battery_bmsWake_time'] ?? time();
 	$hoursSince_Wake_time   = round((time() - $battery_bmsWake_time) / 3600, 1);
-
-	$mayDischarge 	    	= $vars['battery_allowed'] ?? false;
-
 	$totalCapacitykWh       = ($batteryCapacitykWh + $marstekCapacitykWh);
 
 // = Determine which battery is active for injection 
 	$usePiBattery 			= !($pvAvInputVoltage < $batteryVoltMin || $batteryPct <= $batteryMinimum || isset($vars['piBattery_empty']));
-	$useMarstek   			= ($marstekBatSoc > $marstekMinimum && !isset($vars['marstek_empty']));
+	$useMarstek   			= ($marstekSoc > $marstekMinimum && !isset($vars['marstek_empty']));
 	
 	$ecoflowOneMax   		= ($ecoflowOneMaxOutput * 10);
 	$ecoflowTwoMax   		= ($ecoflowTwoMaxOutput * 10);

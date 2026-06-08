@@ -33,7 +33,7 @@
 // = Function GET HomeWizard data
 // = -------------------------------------------------
 	function getHwData($ip) {
-		global $debug, $debugLang;
+		global $debug;
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, "http://".$ip."/api/v1/data");
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -94,7 +94,7 @@
 // = Function GET HomeWizard (energy-socket) status
 // = -------------------------------------------------
 	function getHwStatus($ip) {
-		global $debug, $debugLang;
+		global $debug;
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, "http://".$ip."/api/v1/state");
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -117,7 +117,7 @@
 // = Function Switch HomeWizard (energy-socket) status
 // = -------------------------------------------------
 	function switchHwSocket($energySocket, $cmd) {
-		global $debug, $debugLang;
+		global $debug;
 		global $hwChargerOneIP, $hwChargerTwoIP, $hwChargerThreeIP, $hwChargerFourIP;
 		global $hwEcoFlowOneIP, $hwEcoFlowTwoIP, $hwEcoFlowFanIP;
 
@@ -178,7 +178,7 @@
 // = Function GET HomeWizard Total Output Data
 // = -------------------------------------------------
 	function getHwTotalOutputData($ip) {
-		global $debug, $debugLang;
+		global $debug;
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, "http://".$ip."/api/v1/data");
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -200,7 +200,7 @@
 // = Function GET HomeWizard Total Input Data
 // = -------------------------------------------------
 	function getHwTotalInputData($ip) {
-		global $debug, $debugLang;
+		global $debug;
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, "http://".$ip."/api/v1/data");
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -222,7 +222,7 @@
 // = Function GET HomeWizard P1 fase data
 // = -------------------------------------------------
 	function getHwP1FaseData($ip, $fase) {
-		global $debug, $debugLang;
+		global $debug;
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, "http://".$ip."/api/v1/data");
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -346,9 +346,8 @@
 // = -------------------------------------------------
 	function sendBatteryStatusToDomoticz() {
 		$domoticzUrl   = 'http://192.168.178.7:8080';
-		//global $domoticzIP;
 		global $batteryPct;
-		global $marstekBatSoc;
+		global $marstekSoc;
 		global $marstekMaxOutput;
 		global $ecoflowOneMaxOutput;
 		global $ecoflowTwoMaxOutput;
@@ -356,20 +355,21 @@
 		global $useMarstek;
 		global $batteryMinimum;
 		global $marstekMinimum;
-		//$domoticzUrl   = 'http://'.$domoticzIP.'';
+		global $pauseCharging;
+		global $pauseMarstekCharging;
 		
 		$totalDischargeMarstek  = 0;
 		$totalDischargePiBattery  = 0;
 		$dischargeAvailable = 0;
 		$totalPibatteryPct = round(($batteryPct), 0);
-		$totalMarstekPct = round(($marstekBatSoc), 0);
+		$totalMarstekPct = round(($marstekSoc), 0);
 		
 // === Calculate total injection		
-		if ($marstekBatSoc >= $batteryEmptyRecoveryPct) {
+		if ($marstekSoc >= $batteryMinimum) {
 			$totalDischargeMarstek = $marstekMaxOutput;
 		}
 
-		if ($batteryPct >= $batteryEmptyRecoveryPct) {
+		if ($batteryPct >= $batteryMinimum) {
 			$totalDischargePiBattery = $ecoflowOneMaxOutput + $ecoflowTwoMaxOutput;
 		}
 
@@ -382,6 +382,13 @@
 			$dischargeAvailable = ($totalDischargeMarstek);			
 		} elseif (!$usePiBattery && !$useMarstek) {
 			$dischargeAvailable = 0;			
+		}
+
+
+		if ($pauseCharging && $pauseMarstekCharging) {
+			$bothCharged = 1;
+		} else {
+			$bothCharged = 0;
 		}
 		
 		$updates = [
@@ -397,8 +404,13 @@
 			],
 			[
 				'name'  => 'PiBattery_DischargeAvailable',
-				'type'  => 0, // Integer
+				'type'  => 0,
 				'value' => (string)$dischargeAvailable,
+			],
+			[
+				'name'  => 'PiBattery_Charged',
+				'type'  => 0,
+				'value' => (string)$bothCharged,
 			],
 		];
 
