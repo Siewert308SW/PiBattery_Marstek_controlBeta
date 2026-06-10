@@ -44,7 +44,6 @@
 	$runBaseload 			= false;
 	$varsPiChanged 			= false;
 	$varsChanged			= false;
-	$lockChanged 			= false;
 	
 // = Determine is script called by terminal
 	$isCliInteractive 		= function_exists('posix_isatty') && posix_isatty(STDOUT);
@@ -167,6 +166,15 @@
 		printRow('Laders verbruik', $hwChargerUsage, 'Watt');
 		echo ' '.PHP_EOL;
 
+// === Print Baseload
+		echo ' -/- Baseload                        -\-'.PHP_EOL;
+		printRow('Ingestelde baseload', $currentBaseload, 'Watt');
+		printRow('Gemeten output', abs($hwInvReturn), 'Watt');
+		printRow('Nieuwe baseload', ($newBaseload / 10), 'Watt');
+		printRow('Delta target/gemeten', ($delta / 10), 'Watt');
+		printRow('Baseload update nodig', ($updateNeeded ? 'true' : 'false'));
+		echo ' '.PHP_EOL;
+		
 // === Print Inverter Status 
 		echo ' -/- Ontladen                        -\-'.PHP_EOL;
 		printRow('EcoFlow #1 Output', $hwInvOneReturn, 'Watt');
@@ -208,12 +216,6 @@
 	$varsChanged = $varsChanged ?? false;
 		if ($varsChanged) {
 			writeJsonLocked($varsFile, $vars);
-		}
-		
-// = Charger Lock WriteJson
-	$lockChanged = $lockChanged ?? false;
-		if ($lockChanged) {
-			writeJsonLocked($chargerLockFile, $chargerLockFileVars);
 		}
 	}
 	

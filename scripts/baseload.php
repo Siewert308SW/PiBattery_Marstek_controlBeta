@@ -25,10 +25,8 @@
 // = -------------------------------------------------	
 // = Calculate new baseload
 // = -------------------------------------------------
-	$solarBuffer = ($hwSolarReturn < -500) ? ($baseloadSolarBuffer) : 0;
-	
 	if ($hwP1Usage < $activeMaxOutput){
-		$newBaseloadRef = round(min($activeMaxOutput, max(0, ($hwP1Usage + $currentBaseload + $solarBuffer))) * 10);
+		$newBaseloadRef = round(min($activeMaxOutput, max(0, ($hwP1Usage + $currentBaseload))) * 10);
 	} elseif ($hwP1Usage >= $activeMaxOutput){
 		$newBaseloadRef = round($activeMaxOutput * 10);
 	}
@@ -45,14 +43,16 @@
 	if ($newBaseload <= ($ecoflowMinOutput * 10) && $currentTimestamp < $baseloadIdleUntil) {
 		$newBaseload = ($ecoflowMinOutput * 10);
 		$baseloadIdle = true;
+		if ($debug == 'yes' && $isManualRun){
 		debugMsg('Idle actief: omvormers op minimaal vermogen (' . $ecoflowMinOutput . 'W) nog ' . ($baseloadIdleUntil - $currentTimestamp) . 's');
-
+		}
+		
 // === Reset idle timer
 	} elseif ($baseloadIdleUntil > 0) {
 		$vars['baseload_idle_until'] = 0;
 		$baseloadIdleUntil = 0;
 		$varsChanged = true;
-
+		
 // === Start idle timer
 	} elseif ($usePiBattery && $newBaseload <= ($ecoflowMinOutput * 10) && $currentTimestamp >= $baseloadIdleUntil && $oldBaseload > $ecoflowMinOutput) {
 		$vars['baseload_idle_until'] = $currentTimestamp + $baseloadIdleTimeout;
@@ -60,22 +60,17 @@
 		$baseloadIdle = true;
 		$newBaseload = ($ecoflowMinOutput * 10);
 		$varsChanged = true;
+		if ($debug == 'yes' && $isManualRun){
 		debugMsg('Idle timer gestart: omvormers blijven ' . $baseloadIdleTimeout . 's op minimaal vermogen');
-		
-	} elseif (!$usePiBattery && $newBaseload <= ($ecoflowMinOutput * 10) && $currentTimestamp >= $baseloadIdleUntil && $oldBaseload > $ecoflowMinOutput) {
-		$vars['baseload_idle_until'] = $currentTimestamp + 60;
-		$baseloadIdleUntil = $vars['baseload_idle_until'];
-		$baseloadIdle = true;
-		$newBaseload = ($ecoflowMinOutput * 10);
-		$varsChanged = true;
-		debugMsg('Idle timer gestart: omvormers blijven ' . $baseloadIdleTimeout . 's op minimaal vermogen');
+		}
 	}
 
 // = -------------------------------------------------	
 // = Distribute baseload across active inverters
 // = -------------------------------------------------
 	$remainingLoad       = $newBaseload;
-	$activeCount         = count($activeInverters);
+	$marstekActive       = ($useMarstek && !$baseloadIdle);
+	$activeCount         = ($usePiBattery ? 2 : 0) + ($marstekActive ? 1 : 0);
 	$invOneBaseload      = 0;
 	$invTwoBaseload      = 0;
 	$marstekBaseload     = 0;
@@ -88,7 +83,7 @@
 			$invTwoBaseload = min($targetPerInverter, $ecoflowTwoMax);
 		}
 
-		if ($useMarstek) {
+		if ($marstekActive) {
 			$marstekBaseload = min($targetPerInverter, $marstekMax);
 		}
 
@@ -108,7 +103,7 @@
 			$remainingLoad  -= $add;
 		}
 
-		if ($remainingLoad > 0 && $useMarstek){
+		if ($remainingLoad > 0 && $marstekActive){
 			$add = min($remainingLoad, ($marstekMax - $marstekBaseload));
 			$marstekBaseload += $add;
 			$remainingLoad   -= $add;

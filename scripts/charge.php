@@ -30,7 +30,6 @@
 // === End pause
 	if (!$isManualRun && (($vars['pauseCharging'] ?? true) !== false) && $batteryPct <= $chargerPausePct && $hwInvReturn == 0) { // && $hwInvReturn == 0
 		$vars['pauseCharging'] = false;
-		$vars['pauseMarstekCharging'] = false;
 		$varsChanged = true;
 	}
 
@@ -48,9 +47,16 @@
 	}
 	
 // === End pause
-	if (!$isManualRun && (($vars['pauseMarstekCharging'] ?? true) !== false) && $marstekSoc <= $chargerPausePct && $batteryPct <= $chargerPausePct && $hwInvReturn == 0) { // && $hwInvReturn == 0
+	if (!$isManualRun && (($vars['pauseMarstekCharging'] ?? true) !== false) && $marstekSoc <= $chargerPausePct && $batteryPct <= $chargerPausePct && $hwInvReturn == 0) {
 		$vars['pauseMarstekCharging'] = false;
-		$vars['pauseCharging'] = false;
+		//$vars['pauseCharging'] = false;
+		$vars['marstek_force_mode'] = '';
+		$varsChanged = true;
+	}
+
+// === End pause to topoff Marstek
+	if (!$isManualRun && $pauseMarstekCharging && $pauseCharging && !isset($vars['battery_awaitingCalibration']) && !isset($vars['charge_loss_calculation']) && $marstekSoc < 99 && isset($vars['battery_calibrated']) && $hwInvReturn == 0) {
+		$vars['pauseMarstekCharging'] = false;
 		$vars['marstek_force_mode'] = '';
 		$varsChanged = true;
 	}
@@ -218,16 +224,18 @@
 // = -------------------------------------------------
 	$grossAvailableSolarPower = 0;
 	if ($pauseMarstekCharging) {
-	$grossAvailableSolarPower = max(0, -$P1ChargerUsage);		
+	$grossAvailableSolarPower = max(0, -$P1ChargerUsage - $chargerhyst);		
 	} else {
-	$grossAvailableSolarPower = max(0, -$P1ChargerUsage - $chargerhyst);
+	$grossAvailableSolarPower = max(0, -$P1ChargerUsage - ($chargerhyst / 3));
 	}
 
 // = -------------------------------------------------
 // = Marstek dynamic charger
 // = -------------------------------------------------
 	$marstekChargerTarget = 0;
-	if (!$pauseMarstekCharging && !$keepChargersOff && !$bmsWakeActive) {
+	$keepMarstekOff = ($faseProtect || $hwInvReturn < 0 || $bmsWakeActive || $pauseMarstekCharging);
+	
+	if (!$keepMarstekOff) {
 		if ($grossAvailableSolarPower >= ($marstekChargerMin + $marstekChargerStep)) {
 			$rounded = floor($grossAvailableSolarPower / $marstekChargerStep) * $marstekChargerStep;
 			$marstekChargerTarget = min($marstekChargerMax, max($marstekChargerMin, $rounded - $marstekChargerStep));
@@ -353,7 +361,7 @@
 		}
 	}
 	$currentCombiTotal = array_sum(array_map(fn($n) => $chargers[$n]['power'], $currentCombi));
-	$grossAvailableWithoutHyst = max(0, -$P1ChargerUsage + ($chargerhyst / 2));
+	$grossAvailableWithoutHyst = max(0, -$P1ChargerUsage);
 
 	if (!empty($currentCombi) && in_array($masterName, $currentCombi) && $currentCombiTotal <= $grossAvailableWithoutHyst && $bestTotal < $currentCombiTotal) {
 		$bestCombi = $currentCombi;
@@ -371,12 +379,13 @@
 // = -------------------------------------------------
 	$isUpscaling 		= ($bestTotal > $currentTotal);
 	$isDownscaling 		= ($bestTotal < $currentTotal);
+	$isMinimumCombi 	= (empty($bestCombi) || $realUsage > $marstekMaxOutput);
 	$currentPendingType = null;
 
 	if ($isUpscaling) {
 		$currentPendingType = 'upscale';
 		
-	} elseif ($isDownscaling && empty($bestCombi)) {
+	} elseif ($isDownscaling && $isMinimumCombi) {
 		$currentPendingType = 'downscale';
 	}
 		

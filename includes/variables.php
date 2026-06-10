@@ -51,26 +51,31 @@
 	$varsFile               = $piBatteryPath . 'data/variables.json';
 	$vars                   = file_exists($varsFile) ? json_decode(file_get_contents($varsFile), true) : [];
 
-// = Lock files
-	$chargerLockFile        = $piBatteryPath . 'data/chargerLocked.json';
-	$chargerLockFileVars    = file_exists($chargerLockFile) ? json_decode(file_get_contents($chargerLockFile), true) : [];
-
 // = Domoticz State File
 	$domoticzStateFile 		= $piBatteryPath . 'data/domoticz_state.json';
 
 // = Marstek Variables
-	$marstekVoltage			= $marstekData['batteryVoltage'];
-	$marstekState 			= $marstekData['inverterState'];
-	$marstekSoc   	   		= $marstekData['batterySoc'];
-	$marstekAcPower		    = $marstekData['acPower'];
-	$marstekTemp		    = $marstekData['batteryTemp'];
-	$marstekRTE		    	= $marstekData['lifetimeRte'];
+	$marstekStateFile		= $piBatteryPath . 'data/marstek_state.json';
+
+	if ($marstekData['online']) {
+		writeJsonLocked($marstekStateFile, $marstekData);
+	} else {
+		$marstekCache = file_exists($marstekStateFile) ? json_decode(file_get_contents($marstekStateFile), true) : [];
+		$marstekData  = array_merge($marstekCache, $marstekData);
+	}
+
+	$marstekVoltage			= $marstekData['batteryVoltage'] ?? 0;
+	$marstekState 			= $marstekData['inverterState'] ?? 0;
+	$marstekSoc   	   		= $marstekData['batterySoc'] ?? 0;
+	$marstekAcPower		    = $marstekData['acPower'] ?? 0;
+	$marstekTemp		    = $marstekData['batteryTemp'] ?? 0;
+	$marstekRTE		    	= $marstekData['lifetimeRte'] ?? 0;
 	
 	$hwMarstekSocket = getHwData($hwMarstekIP);
-	if ($hwMarstekSocket >= 0 && $hwMarstekSocket <= 10) {
+	if ($hwMarstekSocket >= 0 && $hwMarstekSocket < 11) {
 		$hwMarstekReturn = 0; 
 		$hwMarstekUsage = 0;
-	} elseif ($hwMarstekSocket > 10) {
+	} elseif ($hwMarstekSocket > 11) {
 		$hwMarstekReturn = 0; 
 		$hwMarstekUsage = $hwMarstekSocket;		
 	} elseif ($hwMarstekSocket < 0) {
@@ -166,6 +171,7 @@
 	$bmsWakeActive  		= $vars['bmsWakeActive'] ?? false;
 	$invInjection			= $vars['invInjection'] ?? false;
 	$baseloadIdleUntil		= $vars['baseload_idle_until'] ?? 0;
+	$battery_awaitingCalibration = $vars['battery_awaitingCalibration'] ?? false;
 	
 // = Get/Set Battery Charge/Discharge/SOC values
 	$batteryCapacitykWh     = ($batteryVolt * $batteryAh / 1000);

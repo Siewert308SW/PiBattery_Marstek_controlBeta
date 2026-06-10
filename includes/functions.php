@@ -357,6 +357,8 @@
 		global $marstekMinimum;
 		global $pauseCharging;
 		global $pauseMarstekCharging;
+		global $battery_awaitingCalibration;
+		global $chargeLossCalculation;
 		
 		$totalDischargeMarstek  = 0;
 		$totalDischargePiBattery  = 0;
@@ -385,7 +387,7 @@
 		}
 
 
-		if ($pauseCharging && $pauseMarstekCharging) {
+		if ($pauseCharging && $pauseMarstekCharging && !$chargeLossCalculation && !$battery_awaitingCalibration) {
 			$bothCharged = 1;
 		} else {
 			$bothCharged = 0;

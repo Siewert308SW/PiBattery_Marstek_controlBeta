@@ -1,0 +1,16 @@
+{
+    "online": true,
+    "lifetimeChargeKwh": 212.97,
+    "lifetimeDischargeKwh": 168.91,
+    "lifetimeRte": 79.3,
+    "batteryVoltage": 53.3,
+    "batteryCurrent": 0,
+    "batterySoc": 92,
+    "batteryTemp": 42,
+    "batteryState": 3,
+    "batteryPower": 0,
+    "acVoltage": 230.3,
+    "acPower": 0,
+    "acFrequency": 50,
+    "inverterState": 1
+}
