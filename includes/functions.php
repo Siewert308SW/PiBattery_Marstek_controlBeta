@@ -172,6 +172,7 @@
 
 		curl_exec($ch);
 		curl_close($ch);
+		usleep(1000000);
 	}
 
 // = -------------------------------------------------
@@ -254,6 +255,41 @@
 	}
 
 // = -------------------------------------------------	
+// = Function GET HomeWizard P1/Solar volt data
+// = -------------------------------------------------
+	function getHwP1VoltData($ip, $fase) {
+		global $debug;
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, "http://".$ip."/api/v1/data");
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		$result = curl_exec($ch);
+
+		if (curl_errno($ch)) { 
+			debugMsg('Kan geen gegevens ophalen van Homewizard: '.$ip.'!');
+			curl_close($ch);
+			return false;
+		} else {
+			$decoded = json_decode($result);
+			switch ($fase) {
+				case 1:
+					$HwP1FaseValue = round($decoded->active_voltage_l1_v, 3);
+					break;
+				case 2:
+					$HwP1FaseValue = round($decoded->active_voltage_l2_v, 3);
+					break;
+				case 3:
+					$HwP1FaseValue = round($decoded->active_voltage_l3_v, 3);
+					break;
+				default:
+					$HwP1FaseValue = false;
+					break;
+			}
+			curl_close($ch);
+			return $HwP1FaseValue;
+		}
+	}
+	
+// = -------------------------------------------------	
 // = Function to convert time in decimals to realTime
 // = -------------------------------------------------
 	function convertTime($dec)
@@ -274,6 +310,28 @@
 		return (strlen($num) < 2) ? "0{$num}" : $num;
 	}
 
+// = -------------------------------------------------
+// = Function GET Domoticz device power
+// = -------------------------------------------------
+	function getDomoticzDevicePower($idx) {
+		global $domoticzIP;
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, "http://192.168.178.7:8080/json.htm?type=command&param=getdevices&rid=".$idx);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		$result = curl_exec($ch);
+
+		if (curl_errno($ch)) {
+			debugMsg('Kan geen gegevens ophalen van Domoticz device: '.$idx.'!');
+			curl_close($ch);
+			return false;
+		} else {
+			$decoded = json_decode($result);
+			$domoticzPower = round((float) $decoded->result[0]->Data);
+			curl_close($ch);
+			return $domoticzPower;
+		}
+	}
+	
 // = -------------------------------------------------
 // = Function Update Domoticz Device
 // = -------------------------------------------------

@@ -104,6 +104,13 @@
 	}
 
 // = -------------------------------------------------
+// = Dashboard API snapshot
+// = -------------------------------------------------
+	if ($runBaseload && !$isManualRun) {
+		require_once $piBatteryPath . 'scripts/display.php';
+	}
+	
+// = -------------------------------------------------
 // = Debug Output
 // = -------------------------------------------------
 	if ($debug == 'yes' && $isManualRun){
@@ -256,7 +263,8 @@
 		        'Nieuwe baseload' => ($newBaseload / 10),
 		        'Delta target' => ($delta / 10),
 				'updateBaseload' => $updateNeeded,
-				'faseProtect' => $faseProtect
+				'faseProtect' => $faseProtect,
+				'marstek_force_mode' => $vars['marstek_force_mode']
 			];
 		
 		writeJsonLocked($runTimerFile, $runTimerVars);

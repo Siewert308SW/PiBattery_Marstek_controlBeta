@@ -194,11 +194,10 @@ class MarstekModbus
 		// 34000 Battery Voltage  uint16 /100 V
 		// 34001 Battery Current  int16  /100 A
 		// 34002 Battery SOC      uint16 /10  %
-		// 34003 Battery Temp     int16        °C
-		// 34004 Battery State    uint16
-		$bat = $this->readHoldingRegisters(34000, 5);
+		// 34003 Battery State    uint16
+		$bat = $this->readHoldingRegisters(34000, 4);
 
-		if (!is_array($bat) || count($bat) < 5) {
+		if (!is_array($bat) || count($bat) < 4) {
 			$this->disconnect();
 			return $data;
 		}
@@ -207,8 +206,17 @@ class MarstekModbus
 		$data['batteryVoltage'] = round($bat[0] / 100, 1);
 		$data['batteryCurrent'] = round($this->toSigned16($bat[1]) / 100, 2);
 		$data['batterySoc']     = round($bat[2] / 10, 0);
-		$data['batteryTemp']    = $this->toSigned16($bat[3]);
-		$data['batteryState']   = $bat[4];
+		$data['batteryState']   = $bat[3];
+
+// = -------------------------------------------------
+// = Battery Temperature
+// = -------------------------------------------------
+// 35000 Internal Temp  int16 /10 °C
+		$temps = $this->readHoldingRegisters(35000, 1);
+
+		if (is_array($temps) && count($temps) >= 1) {
+			$data['batteryTemp'] = round($this->toSigned16($temps[0]) / 10, 1);
+		}
 
 // = -------------------------------------------------
 // = Battery Power
@@ -250,6 +258,16 @@ class MarstekModbus
 	}
 
 // = -------------------------------------------------
+// = Get RS485 Control Mode
+// = -------------------------------------------------
+	public function getControlMode(): ?int
+	{
+		$result = $this->readHoldingRegisters(42000, 1);
+
+		return (is_array($result) && isset($result[0])) ? $result[0] : null;
+	}
+
+// = -------------------------------------------------
 // = Start Charge Power
 // = -------------------------------------------------
 	public function startChargePower(int $watts): bool
@@ -274,6 +292,12 @@ class MarstekModbus
 	{
 		
 		$watts = abs($watts);
+
+		$controlMode = $this->getControlMode();
+
+		if ($controlMode !== null && $controlMode !== 21930) {
+			$this->writeHoldingRegister(42000, 21930);
+		}
 
 		$result = $this->writeHoldingRegister(42020, $watts);
 
@@ -306,6 +330,12 @@ class MarstekModbus
 	public function setDischargePower(int $watts): bool
 	{
 		$watts = abs($watts);
+
+		$controlMode = $this->getControlMode();
+
+		if ($controlMode !== null && $controlMode !== 21930) {
+			$this->writeHoldingRegister(42000, 21930);
+		}
 
 		$result = $this->writeHoldingRegister(42021, $watts);
 

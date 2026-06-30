@@ -36,29 +36,29 @@
 // = Marstek Inverter variables	
 	$marstekMaxOutput      	= 800;								 // Marstek max output
 	$marstekChargerStep     = 50;								 // Marstek charger step size in Watt
-	$marstekChargerMin      = 200;								 // Marstek minimum charge power in Watt
-	$marstekChargerMax      = 2400;								 // Marstek maximum charge power in Watt
+	$marstekChargerMin      = 100;								 // Marstek minimum charge power in Watt
+	$marstekChargerMax      = 2000;								 // Marstek maximum charge power in Watt
 	$marstekMaxInvTemp     	= 65;           					 // Maximum internal temperature (°C)
 	
 // = EcoFlow Inverter variables
-	$ecoflowOneMaxOutput   	= 580;								 // EcoFlow inverter #1 max output
-	$ecoflowTwoMaxOutput   	= 580;								 // EcoFlow inverter #1 max output
+	$ecoflowOneMaxOutput   	= 575;								 // EcoFlow inverter #1 max output
+	$ecoflowTwoMaxOutput   	= 575;								 // EcoFlow inverter #1 max output
 	$ecoflowMinOutput      	= 75;         					     // Minimum output (Watts); the inverter is allowed to deliver
 	$ecoflowMaxInvTemp     	= 65;           					 // Maximum internal temperature (°C)
 
 // = Charger variables
-	$chargerhyst            = 150;          					 // P1 hysteresis for toggling chargers
+	$chargerhyst            = 100;          					 // P1 hysteresis for toggling chargers
 	$chargerWattsIdle       = 80;          					     // Standby Watts of all chargers when idle
+	$chargerPause          	= 30;          					 	 // Delay in seconds before toggling chargers (prevents flip-flops)
 	$chargerPausePct        = 90;           					 // When battery has been charged 100% till what % has it to drop before charging is allowed again
-	$chargeSessions			= 15;                                // How many charge session to calculate charging loss 
-	$chargerPause          	= 15;          					 	 // Delay in seconds before toggling chargers (prevents flip-flops)
+	$chargeSessions			= 4;                                 // How many charge session to calculate charging loss 
 	$chargerLossDefault     = 0.225;							 // Default charger loss fallback (used before dynamic calculation is available)
 	
 // = Baseload variables
 	$baseloadPosDelta		= 10;								 // Baseload update delta if p1 is importing @ injecting
-	$baseloadNegDelta		= 20;								 // Baseload update delta if p1 is exporting @ injecting
-	$baseloadIdleTimeout	= 180;								 // Seconds inverters stay on minimum output (idle) after injection stops
-	$baseloadSolarBuffer    = 50;  							 	 // Some extra Watt baseload buffer during the day to overcome flip/flops
+	$baseloadNegDelta		= 25;								 // Baseload update delta if p1 is exporting @ injecting
+	$baseloadIdleTimeout	= 240;								 // Seconds inverters stay on minimum output (idle) after injection stops
+	$baseloadBuffer    		= 5;  							 	 // Some extra Watt added to baseload to buffer during the day to overcome flip/flops
 
 // = Phase protection
 	$faseProtection         = 'yes';        				     // Value 'yes' or 'no'
@@ -84,10 +84,10 @@
 	
 // = Chargers
 	$chargers = [
-		'charger1' => ['ip' => ''.$hwChargerOneIP.'', 'power' => 300, 'label' => 'one', 'master' => true, 'spare_charger' => false],
+		'charger1' => ['ip' => ''.$hwChargerOneIP.'', 'power' => 350, 'label' => 'one', 'master' => true, 'spare_charger' => false],
 		'charger2' => ['ip' => ''.$hwChargerTwoIP.'', 'power' => 600, 'label' => 'two', 'master' => false, 'spare_charger' => false],
-		'charger3' => ['ip' => ''.$hwChargerThreeIP.'', 'power' => 300, 'label' => 'three', 'master' => false, 'spare_charger' => false],
-		'charger4' => ['ip' => ''.$hwChargerFourIP.'', 'power' => 300, 'label' => 'four', 'master' => false, 'spare_charger' => false],
+		'charger3' => ['ip' => ''.$hwChargerThreeIP.'', 'power' => 350, 'label' => 'three', 'master' => false, 'spare_charger' => false],
+		'charger4' => ['ip' => ''.$hwChargerFourIP.'', 'power' => 350, 'label' => 'four', 'master' => false, 'spare_charger' => true],
 	];
 
 // = Ecoflow Powerstream API variables
@@ -115,6 +115,10 @@
 	$marstekTempIDX 		= '163';
 	$batteryRTEIDX 		    = '145';
 	$marstekRTEIDX 		    = '162';
+
+// = Domoticz airco vermogen (uitlezen)
+	$aircoLivingIDX         = '6162';
+	$aircoBovenIDX          = '6173';
 	
 // = URLs
 	$baseUrl = 'http://'.$domoticzIP.'/json.htm?type=command&param=getdevices&rid=';

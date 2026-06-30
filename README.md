@@ -129,7 +129,7 @@ Totale kosten voor effectief **11 kWh** aan opslag en **2000W** injectievermogen
 </p>
 
 <p align="center">
-<img src="images/display.jpg" alt="Mijn setup" width="75%">
+<img src="images/display.png" alt="Mijn setup" width="75%">
 </p>
 
 <p align="center"><small>Mijn setup in de garage</small></p>

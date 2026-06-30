@@ -28,9 +28,9 @@
 // = Check DST time
 	$isDST = $dateTime->format("I");
 	if ($isDST == '1'){
-	$gmt = '1';
+	$gmt = '2';
 	} else {
-	$gmt = '0';
+	$gmt = '1';
 	}
 
 // = Get Sunrise/Sunset
@@ -46,6 +46,8 @@
 	
 	$sunriseLate	 		= $sunriseTime->format('H:i');
 	$sunsetEarly		 	= $sunsetTime->format('H:i');
+
+	$dayTime				= ($currentTime >= $sunriseLate && $currentTime <= $sunsetEarly);
 	
 // = Get current variable files
 	$varsFile               = $piBatteryPath . 'data/variables.json';
@@ -157,6 +159,8 @@
 	$oldBaseload 			= $vars['oldBaseload'] ?? 0;
 	
 // = Various
+	$systemFailure			= $vars['systemFailure'] ?? false;
+	$systemFailureIssue 	= $vars['systemFailureIssue'] ?? null;
 	$pauseUntil       		= $vars['charger_pause_until'] ?? 0;
 	$pendingSwitch 	  		= $vars['charger_pending_switch'] ?? false;
 	$charger_pending_type 	= $vars['charger_pending_type'] ?? null;
@@ -170,6 +174,7 @@
 	$battery_calibrated		= $vars['battery_calibrated'] ?? false;
 	$bmsWakeActive  		= $vars['bmsWakeActive'] ?? false;
 	$invInjection			= $vars['invInjection'] ?? false;
+	$baseloadIdle			= $vars['baseloadIdle'] ?? false;
 	$baseloadIdleUntil		= $vars['baseload_idle_until'] ?? 0;
 	$battery_awaitingCalibration = $vars['battery_awaitingCalibration'] ?? false;
 	
@@ -198,8 +203,8 @@
 	$totalCapacitykWh       = ($batteryCapacitykWh + $marstekCapacitykWh);
 
 // = Determine which battery is active for injection 
-	$usePiBattery 			= !($pvAvInputVoltage < $batteryVoltMin || $batteryPct <= $batteryMinimum || isset($vars['piBattery_empty']));
-	$useMarstek   			= ($marstekSoc > $marstekMinimum && !isset($vars['marstek_empty']));
+	$usePiBattery 			= !($pvAvInputVoltage < $batteryVoltMin || $batteryPct <= $batteryMinimum || isset($vars['piBattery_empty']) && $hwInvOneStatus == 'On' && $hwInvTwoStatus == 'On');
+	$useMarstek   			= ($marstekSoc > $marstekMinimum && !isset($vars['marstek_empty']) && $hwMarstekStatus == 'On');
 	
 	$ecoflowOneMax   		= ($ecoflowOneMaxOutput * 10);
 	$ecoflowTwoMax   		= ($ecoflowTwoMaxOutput * 10);

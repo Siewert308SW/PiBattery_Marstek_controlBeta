@@ -1,16 +1,16 @@
 {
     "online": true,
-    "lifetimeChargeKwh": 212.97,
-    "lifetimeDischargeKwh": 168.91,
-    "lifetimeRte": 79.3,
-    "batteryVoltage": 53.3,
-    "batteryCurrent": 0,
-    "batterySoc": 92,
-    "batteryTemp": 42,
-    "batteryState": 3,
-    "batteryPower": 0,
-    "acVoltage": 230.3,
-    "acPower": 0,
+    "lifetimeChargeKwh": 269.59,
+    "lifetimeDischargeKwh": 213.04,
+    "lifetimeRte": 79,
+    "batteryVoltage": 53.1,
+    "batteryCurrent": -0.66,
+    "batterySoc": 94,
+    "batteryState": 52,
+    "batteryTemp": 34.9,
+    "batteryPower": -351,
+    "acVoltage": 230.4,
+    "acPower": 317,
     "acFrequency": 50,
-    "inverterState": 1
+    "inverterState": 3
 }

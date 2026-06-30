@@ -25,33 +25,126 @@
 // = -------------------------------------------------	
 // = Calculate new baseload
 // = -------------------------------------------------
+
 	if ($hwP1Usage < $activeMaxOutput){
-		$newBaseloadRef = round(min($activeMaxOutput, max(0, ($hwP1Usage + $currentBaseload))) * 10);
+		if ($hwSolarReturn == 0) {
+		$newBaseloadRef = round(min($activeMaxOutput, max(0, ($hwP1Usage + $currentBaseload + $baseloadBuffer))) * 10);
+		} else {
+		$newBaseloadRef = round(min($activeMaxOutput, max(0, ($hwP1Usage + $currentBaseload + ($baseloadBuffer * 10)))) * 10);
+		}
 	} elseif ($hwP1Usage >= $activeMaxOutput){
 		$newBaseloadRef = round($activeMaxOutput * 10);
 	}
 
+	$baseloadRawRef = (int) $newBaseloadRef;
+
+// = -------------------------------------------------	
+// = Fluctuation damping: follow directly, average only when restless
+// = -------------------------------------------------
+if($hwChargerUsage < 11 && $hwInvsReturn < 0){
+	$baseloadSwingOffset  = 175;										 // Change (W) bigger than this counts as a big swing
+	$baseloadFluctWindow  = 90;											 // Window (s) to look for repeating reversals
+	$baseloadFluctTrigger = 4;											 // Reversals within the window before averaging starts
+	$baseloadAvgRuns      = 4;											 // Runs to average over while damping
+
+	$baseloadLastRef      = $vars['baseloadLastRef']     ?? $baseloadRawRef;
+	$baseloadLastBigSign  = $vars['baseloadLastBigSign'] ?? 0;
+	$baseloadReversals    = $vars['baseloadReversals']   ?? [];
+	$baseloadDampUntil    = $vars['baseloadDampUntil']   ?? 0;
+	$baseloadRefHistory   = $vars['baseloadRefHistory']  ?? [];
+
+// === Keep a short history of raw targets for averaging
+	$baseloadRefHistory[] = $baseloadRawRef;
+	if (count($baseloadRefHistory) > $baseloadAvgRuns) {
+		$baseloadRefHistory = array_slice($baseloadRefHistory, -$baseloadAvgRuns);
+	}
+
+// === Flag a reversal when a big swing flips against the previous big swing
+	$baseloadDelta = $baseloadRawRef - $baseloadLastRef;
+		
+	if (abs($baseloadDelta) > ($baseloadSwingOffset * 10)) {
+		$baseloadBigSign = ($baseloadDelta > 0) ? 1 : -1;
+		
+		if ($baseloadLastBigSign != 0 && $baseloadBigSign != $baseloadLastBigSign) {
+			$baseloadReversals[] = $currentTimestamp;
+		}
+		$baseloadLastBigSign = $baseloadBigSign;
+	}
+
+// === Keep only reversals inside the window
+	$baseloadReversalsKept = [];
+	foreach ($baseloadReversals as $reversalTime) {
+		if ($reversalTime > ($currentTimestamp - $baseloadFluctWindow)) {
+			$baseloadReversalsKept[] = $reversalTime;
+		}
+	}
+	$baseloadReversals = $baseloadReversalsKept;
+		
+// === Start or refresh damping while reversals keep repeating
+	if (count($baseloadReversals) >= $baseloadFluctTrigger) {
+		$baseloadDampUntil = $currentTimestamp + $baseloadFluctWindow;
+	}
+
+// === Average while damping, otherwise follow the raw target directly
+	if ($currentTimestamp < $baseloadDampUntil) {
+		$newBaseloadRef = round(array_sum($baseloadRefHistory) / count($baseloadRefHistory));
+
+		if ($debug == 'yes' && $isManualRun){
+		debugMsg('Baseload demping actief: middelen nog ' . ($baseloadDampUntil - $currentTimestamp) . 's');
+		}
+	} else {
+		$newBaseloadRef = $baseloadRawRef;
+	}
+		
+// === Store fluctuation state for the next run
+	if (!$isManualRun
+	&& (($vars['baseloadLastRef']     ?? null) !== $baseloadRawRef
+	 || ($vars['baseloadLastBigSign'] ?? null) !== $baseloadLastBigSign
+	 || ($vars['baseloadReversals']   ?? null) !== $baseloadReversals
+	 || ($vars['baseloadDampUntil']   ?? null) !== $baseloadDampUntil
+	 || ($vars['baseloadRefHistory']  ?? null) !== $baseloadRefHistory)) {
+		$vars['baseloadLastRef']     = $baseloadRawRef;
+		$vars['baseloadLastBigSign'] = $baseloadLastBigSign;
+		$vars['baseloadReversals']   = $baseloadReversals;
+		$vars['baseloadDampUntil']   = $baseloadDampUntil;
+		$vars['baseloadRefHistory']  = $baseloadRefHistory;
+		$varsChanged = true;
+	}
+} elseif(($hwSolarReturn == 0 || $hwChargerUsage > 15 || $hwInvsReturn >= 0) &&($vars['baseloadDampUntil'] != 0)){
+
+			$vars['baseloadLastRef']     = $baseloadRawRef;
+			$vars['baseloadLastBigSign'] = 0;
+			$vars['baseloadReversals']   = [];
+			$vars['baseloadDampUntil']   = 0;
+			$vars['baseloadRefHistory']  = [];
+			$varsChanged = true;
+			
+}
+
+
+// === Apply damped or direct target to baseload
 	$newBaseload = floor(($newBaseloadRef) / 10) * 10;
 	
 // = -------------------------------------------------
 // = Idle: Keep inverters idle x minutes after injection stops 
 // = -------------------------------------------------
-	$baseloadIdle 			= false;
-	$baseloadIdleOverride 	= false;
+	$baseloadIdle 		  = false;
+	$baseloadIdleOverride = false;
 	
 // === If newBaseload drops to 0 but idle timer still active, keep minimal injection for x minutes
 	if ($newBaseload <= ($ecoflowMinOutput * 10) && $currentTimestamp < $baseloadIdleUntil) {
 		$newBaseload = ($ecoflowMinOutput * 10);
 		$baseloadIdle = true;
+		if ($vars['baseloadIdle'] !== true){ $vars['baseloadIdle'] = true; $varsChanged = true; }
 		if ($debug == 'yes' && $isManualRun){
 		debugMsg('Idle actief: omvormers op minimaal vermogen (' . $ecoflowMinOutput . 'W) nog ' . ($baseloadIdleUntil - $currentTimestamp) . 's');
 		}
 		
 // === Reset idle timer
 	} elseif ($baseloadIdleUntil > 0) {
-		$vars['baseload_idle_until'] = 0;
+		if (($vars['baseload_idle_until'] ?? 0) !== 0){ $vars['baseload_idle_until'] = 0; $varsChanged = true; }
 		$baseloadIdleUntil = 0;
-		$varsChanged = true;
+		if ($vars['baseloadIdle'] !== false){ $vars['baseloadIdle'] = false; $varsChanged = true; }
 		
 // === Start idle timer
 	} elseif ($usePiBattery && $newBaseload <= ($ecoflowMinOutput * 10) && $currentTimestamp >= $baseloadIdleUntil && $oldBaseload > $ecoflowMinOutput) {
@@ -59,6 +152,7 @@
 		$baseloadIdleUntil = $vars['baseload_idle_until'];
 		$baseloadIdle = true;
 		$newBaseload = ($ecoflowMinOutput * 10);
+		if ($vars['baseloadIdle'] !== true){ $vars['baseloadIdle'] = true; }
 		$varsChanged = true;
 		if ($debug == 'yes' && $isManualRun){
 		debugMsg('Idle timer gestart: omvormers blijven ' . $baseloadIdleTimeout . 's op minimaal vermogen');
@@ -69,8 +163,9 @@
 // = Distribute baseload across active inverters
 // = -------------------------------------------------
 	$remainingLoad       = $newBaseload;
-	$marstekActive       = ($useMarstek && !$baseloadIdle);
-	$activeCount         = ($usePiBattery ? 2 : 0) + ($marstekActive ? 1 : 0);
+	//$marstekActive       = ($useMarstek && !$baseloadIdle);
+	//$activeCount         = ($usePiBattery ? 2 : 0) + ($marstekActive ? 1 : 0);
+	$activeCount         = count($activeInverters);
 	$invOneBaseload      = 0;
 	$invTwoBaseload      = 0;
 	$marstekBaseload     = 0;
@@ -83,7 +178,7 @@
 			$invTwoBaseload = min($targetPerInverter, $ecoflowTwoMax);
 		}
 
-		if ($marstekActive) {
+		if ($useMarstek) {
 			$marstekBaseload = min($targetPerInverter, $marstekMax);
 		}
 
@@ -103,7 +198,7 @@
 			$remainingLoad  -= $add;
 		}
 
-		if ($remainingLoad > 0 && $marstekActive){
+		if ($remainingLoad > 0 && $useMarstek){
 			$add = min($remainingLoad, ($marstekMax - $marstekBaseload));
 			$marstekBaseload += $add;
 			$remainingLoad   -= $add;
@@ -229,13 +324,13 @@
 // = -------------------------------------------------
 	$updateNeeded = false;
 	$delta = abs($newBaseload - abs($hwInvReturn * 10));
-	
+
 	if($hwP1Usage > 0){
 		$updateNeeded = ($delta > ($baseloadPosDelta * 10));
 	} elseif($hwP1Usage <= 0){
 		$updateNeeded = ($delta > ($baseloadNegDelta * 10));
 	}
-	
+
 // = -------------------------------------------------	
 // = Update baseload
 // = -------------------------------------------------
@@ -271,6 +366,17 @@
 			$vars['invInjection'] = false;
 			$vars['marstek_force_mode'] = '';
 		}
+
+// === Reset fluctuation state so discharging resumes directly after the block
+		if ($vars['baseloadDampUntil'] != 0 && !$isManualRun) {
+			$vars['baseloadLastRef']     = $baseloadRawRef;
+			$vars['baseloadLastBigSign'] = 0;
+			$vars['baseloadReversals']   = [];
+			$vars['baseloadDampUntil']   = 0;
+			$vars['baseloadRefHistory']  = [];
+			$varsChanged = true;
+		}
+		
 	}
 
 ?>
