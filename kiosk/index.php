@@ -77,11 +77,11 @@ $initial = null;
 	.tile .v { font-size:13px; font-weight:500; text-align:center;}
 
 	.day { padding:11px 12px; flex:1; display:flex; flex-direction:column; }
-	.day .h { font-size:12px; color:#8B97A5; margin-bottom:9px; }
+	.day .h { font-size:12px; color:#8B97A5; margin-bottom:5px; }
 	.day .line { display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px; }
 	.day .line .k { color:#A7B2BF; }
 	.day .line .v { font-weight:500; }
-	.day .foot { margin-top:auto; border-top:1px solid rgba(255,255,255,0.08); padding-top:9px; }
+	.day .foot { margin-top:auto; border-top:1px solid rgba(255,255,255,0.08); padding-top:6px; }
 	.day .foot .t { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
 	.day .foot .t .k { font-size:12px; color:#A7B2BF; }
 	.day .foot .t .v { font-size:13px; font-weight:500; color:#5DCAA5; }
@@ -212,22 +212,22 @@ $initial = null;
 				<div class="node" style="left:145px; top:15px;">
 					<div class="lbl2">Zonnepanelen</div>
 					<div class="circ" style="border:2px solid #EF9F27;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></div>
-					<div class="val" id="f-solar" style="color:#FAC775;">0,00 kWh</div>
+					<div class="val" id="f-solar" style="color:#FAC775;">0,00 W</div>
 				</div>
 				<div class="node" style="left:21px; top:155px;">
 					<div class="lbl">Net</div>
 					<div class="circ" style="border:2px solid #5F6B79;"><svg width="26" height="26" viewBox="0 0 24 24" fill="#8B97A5"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></div>
-					<div class="val" id="f-p1" style="color:#A7B2BF;">0,00 kWh</div>
+					<div class="val" id="f-p1" style="color:#A7B2BF;">0,00 W</div>
 					<div class="lbl" id="f-p1label" style="color:#5DCAA5;">export</div>
 				</div>
 				<div class="node" style="left:269px; top:155px;">
 					<div class="lbl">Huis</div>
 					<div class="circ" style="border:2px solid #378ADD;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#85B7EB" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg></div>
-					<div class="val" id="f-home" style="color:#85B7EB;">0,00 kWh</div>
+					<div class="val" id="f-home" style="color:#85B7EB;">0,00 W</div>
 				</div>
 				<div class="node" style="left:145px; top:259px;">
 					<div class="circ" style="border:2px solid #1D9E75;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5DCAA5" stroke-width="2" stroke-linejoin="round"><rect id="accu-fill" x="5" y="10" width="12" height="5" rx="0.5" fill="#5DCAA5" stroke="none"/><rect x="3" y="8" width="16" height="9" rx="1"/><path d="M21 11v3"/></svg></div>
-					<div class="val" id="f-accu" style="color:#5DCAA5;">0,00 kWh</div>
+					<div class="val" id="f-accu" style="color:#5DCAA5;">0,00 W</div>
 					<div class="lbl">Batterij</div>
 				</div>
 			</div>
@@ -256,6 +256,8 @@ $initial = null;
 				<div class="foot">
 					<div class="t"><span class="k">Zelfvoorzienend</span><span class="v" id="d-zelf">0%</span></div>
 					<div class="bar"><div id="d-zelfbar"></div></div>
+					<div class="t" style="margin-top:6px;"><span class="k">Eigen PV-gebruik</span><span class="v" id="d-pvgebruik">0%</span></div>
+					<div class="bar"><div id="d-pvgebruikbar" style="background:#FAC775"></div></div>
 				</div>
 			</div>
 		</div>
@@ -344,6 +346,11 @@ $initial = null;
 		set('d-export',   kwh(d.day.today.export) + ' kWh');
 		set('d-zelf', d.day.today.zelf + '%');
 		document.getElementById('d-zelfbar').style.width = d.day.today.zelf + '%';
+
+		// = Eigen PV-gebruik (hoeveel van de opwek zelf verbruikt i.p.v. geëxporteerd)
+		const pvGebruik = d.day.today.pv > 0 ? Math.round((d.day.today.pv - d.day.today.export) / d.day.today.pv * 100) : 0;
+		set('d-pvgebruik', pvGebruik + '%');
+		document.getElementById('d-pvgebruikbar').style.width = pvGebruik + '%';
 
 		// = Voltages per fase
 		if (d.voltages) {
