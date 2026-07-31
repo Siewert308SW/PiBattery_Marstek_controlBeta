@@ -89,33 +89,33 @@
 	$hwP1Usage              = getHwData($hwP1IP);
 	$hwP1Fase               = getHwP1FaseData($hwP1IP, $fase);
 	$hwSolarReturn          = getHwData($hwKwhIP);
-	$_hwInvOne              = getHwAll($hwEcoFlowOneIP);
-	$_hwInvTwo              = getHwAll($hwEcoFlowTwoIP);
-	$_hwChargerOne          = getHwAll($hwChargerOneIP);
-	$_hwChargerTwo          = getHwAll($hwChargerTwoIP);
-	$_hwChargerThree        = getHwAll($hwChargerThreeIP);
-	$_hwChargerFour         = getHwAll($hwChargerFourIP);
+	$hw_InvOne              = getHwAll($hwEcoFlowOneIP);
+	$hw_InvTwo              = getHwAll($hwEcoFlowTwoIP);
+	$hw_ChargerOne          = getHwAll($hwChargerOneIP);
+	$hw_ChargerTwo          = getHwAll($hwChargerTwoIP);
+	$hw_ChargerThree        = getHwAll($hwChargerThreeIP);
+	$hw_ChargerFour         = getHwAll($hwChargerFourIP);
 
-	$hwInvOneReturn         = $_hwInvOne['power'];
-	$hwInvTwoReturn         = $_hwInvTwo['power'];
+	$hwInvOneReturn         = $hw_InvOne['power'];
+	$hwInvTwoReturn         = $hw_InvTwo['power'];
 	$hwInvsReturn           = ($hwInvOneReturn + $hwInvTwoReturn);
 	$hwInvReturn            = ($hwInvOneReturn + $hwInvTwoReturn + $hwMarstekReturn);
 
-	$hwChargerOneUsage      = $_hwChargerOne['power'];
-	$hwChargerTwoUsage      = $_hwChargerTwo['power'];
-	$hwChargerThreeUsage    = $_hwChargerThree['power'];
-	$hwChargerFourUsage    	= $_hwChargerFour['power'];
+	$hwChargerOneUsage      = $hw_ChargerOne['power'];
+	$hwChargerTwoUsage      = $hw_ChargerTwo['power'];
+	$hwChargerThreeUsage    = $hw_ChargerThree['power'];
+	$hwChargerFourUsage    	= $hw_ChargerFour['power'];
 	$hwChargersUsage        = ($hwChargerOneUsage + $hwChargerTwoUsage + $hwChargerThreeUsage + $hwChargerFourUsage);
 	$hwChargerUsage         = ($hwChargerOneUsage + $hwChargerTwoUsage + $hwChargerThreeUsage + $hwChargerFourUsage + $hwMarstekUsage);
 
-	$hwChargerOneStatus     = $_hwChargerOne['status'];
-	$hwChargerTwoStatus     = $_hwChargerTwo['status'];
-	$hwChargerThreeStatus   = $_hwChargerThree['status'];
-	$hwChargerFourStatus    = $_hwChargerFour['status'];
+	$hwChargerOneStatus     = $hw_ChargerOne['status'];
+	$hwChargerTwoStatus     = $hw_ChargerTwo['status'];
+	$hwChargerThreeStatus   = $hw_ChargerThree['status'];
+	$hwChargerFourStatus    = $hw_ChargerFour['status'];
 	$hwMarstekStatus        = getHwStatus($hwMarstekIP);
 	
-	$hwInvOneStatus         = $_hwInvOne['status'];
-	$hwInvTwoStatus         = $_hwInvTwo['status'];
+	$hwInvOneStatus         = $hw_InvOne['status'];
+	$hwInvTwoStatus         = $hw_InvTwo['status'];
 	
 // = Get battery Voltage via inverter
 	$pv1OneInputVolt 		= ($invOne['data']['20_1.pv1InputVolt']) / 10;
@@ -141,13 +141,13 @@
 	$P1ChargerUsage         = ($hwP1Usage - $hwChargerUsage);
 	
 // = Get Inverter and charger real output
-	$hwInvOneTotal          = $_hwInvOne['total_export'];
-	$hwInvTwoTotal          = $_hwInvTwo['total_export'];
+	$hwInvOneTotal          = $hw_InvOne['total_export'];
+	$hwInvTwoTotal          = $hw_InvTwo['total_export'];
 	$hwInvTotal             = ($hwInvOneTotal + $hwInvTwoTotal);
-	$hwChargerOneTotal      = $_hwChargerOne['total_import'];
-	$hwChargerTwoTotal      = $_hwChargerTwo['total_import'];
-	$hwChargerThreeTotal    = $_hwChargerThree['total_import'];
-	$hwChargerFourTotal     = $_hwChargerFour['total_import'];
+	$hwChargerOneTotal      = $hw_ChargerOne['total_import'];
+	$hwChargerTwoTotal      = $hw_ChargerTwo['total_import'];
+	$hwChargerThreeTotal    = $hw_ChargerThree['total_import'];
+	$hwChargerFourTotal     = $hw_ChargerFour['total_import'];
 	$hwChargersTotalInput   = ($hwChargerOneTotal + $hwChargerTwoTotal + $hwChargerThreeTotal + $hwChargerFourTotal);
 
 // = Get Current Baseload
@@ -170,13 +170,13 @@
 	$pauseMarstekCharging   = $vars['pauseMarstekCharging'] ?? false;
 	$keepChargersOff 		= $vars['keepChargersOff'] ?? false;
 	$faseProtect	 		= $vars['faseProtect'] ?? false;
-	$chargeLossCalculation 	= $vars['charge_loss_calculation'] ?? false;
 	$battery_calibrated		= $vars['battery_calibrated'] ?? false;
 	$bmsWakeActive  		= $vars['bmsWakeActive'] ?? false;
 	$invInjection			= $vars['invInjection'] ?? false;
 	$baseloadIdle			= $vars['baseloadIdle'] ?? false;
 	$baseloadIdleUntil		= $vars['baseload_idle_until'] ?? 0;
 	$battery_awaitingCalibration = $vars['battery_awaitingCalibration'] ?? false;
+	$sunScore				= $vars['sunScore'] ?? 0;
 	
 // = Get/Set Battery Charge/Discharge/SOC values
 	$batteryCapacitykWh     = ($batteryVolt * $batteryAh / 1000);
