@@ -33,7 +33,7 @@ $initial = null;
 		font-size:13px; background:rgba(240,85,85,0.18); color:#F09595; padding:4px 11px; border-radius:20px;
 		display:flex; align-items:center; gap:6px; }
 	.sun-pill { position:absolute; top:8px; left:50%; transform:translateX(-50%); z-index:5;
-		font-size:13px; color:#5DCAA5; padding:4px 11px; border-radius:20px;
+		font-size:13px; padding:4px 11px; border-radius:20px;
 		display:flex; align-items:center; gap:6px; }
 	.sun-pill .sep { opacity:0.4; }
 
@@ -129,7 +129,7 @@ $initial = null;
 						<div id="pi-power" style="color:#5DCAA5;">—</div>
 					</div>
 				</div>
-				<div class="chargers-label">laden</div>
+				<div class="chargers-label">laders</div>
 				<div class="chargers" id="pi-chargers"></div>
 				<div class="pbar">
 					<div class="t"><span class="k">ontladen</span><span class="v" id="pi-dis-val">—</span></div>
@@ -169,10 +169,10 @@ $initial = null;
 				<span id="warn-text">—</span>
 			</div>
 			<div class="sun-pill" id="sun-pill" style="display:none;">
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5DCAA5" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
 				<span id="sun-rise">—</span>
 				<span class="sep">·</span>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5DCAA5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#378ADD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
 				<span id="sun-set">—</span>
 			</div>
 			<div class="stage">
@@ -244,19 +244,19 @@ $initial = null;
 				<div class="h">Vandaag:</div>
 				<div class="line"><span class="k">Verbruik Bruto</span><span class="v" id="d-verbruik-bruto">—</span></div>
 				<div class="line"><span class="k">Verbruik Netto</span><span class="v" id="d-verbruik-netto" style="color:#85B7EB;">—</span></div>
-				<div class="line"><span class="k">PV opwek</span><span class="v" id="d-pv" style="color:#FAC775;">—</span></div>
-				<div class="line"><span class="k">Import</span><span class="v" id="d-import" style="color:#F09595;">—</span></div>
-				<div class="line"><span class="k">Export</span><span class="v" id="d-export" style="color:#5DCAA5;">—</span></div>
+				<div class="line"><span class="k">PV-opwek</span><span class="v" id="d-pv" style="color:#FAC775;">—</span></div>
+				<div class="line"><span class="k">P1-import</span><span class="v" id="d-import" style="color:#F09595;">—</span></div>
+				<div class="line"><span class="k">P1-export</span><span class="v" id="d-export" style="color:#5DCAA5;">—</span></div>
 				<div class="foot">
 				<div class="h">Voltages:</div>
-				<div class="line"><span class="k">Fase 1:</span><span class="v" id="d-fase1">—</span></div>
-				<div class="line"><span class="k">Fase 2:</span><span class="v" id="d-fase2" style="color:#85B7EB;">—</span></div>
-				<div class="line"><span class="k">Fase 3:</span><span class="v" id="d-fase3" style="color:#5DCAA5;">—</span></div>
+				<div class="line"><span class="k">Fase 1</span><span class="v" id="d-fase1">—</span></div>
+				<div class="line"><span class="k">Fase 2</span><span class="v" id="d-fase2" style="color:#85B7EB;">—</span></div>
+				<div class="line"><span class="k">Fase 3</span><span class="v" id="d-fase3" style="color:#5DCAA5;">—</span></div>
 				</div>
 				<div class="foot">
 					<div class="t"><span class="k">Zelfvoorzienend</span><span class="v" id="d-zelf">0%</span></div>
 					<div class="bar"><div id="d-zelfbar"></div></div>
-					<div class="t" style="margin-top:6px;"><span class="k">Eigen PV-gebruik</span><span class="v" id="d-pvgebruik">0%</span></div>
+					<div class="t" style="margin-top:6px;"><span class="k">Eigen PV-gebruik</span><span class="v" id="d-pvgebruik" style="color:#FAC775">0%</span></div>
 					<div class="bar"><div id="d-pvgebruikbar" style="background:#FAC775"></div></div>
 				</div>
 			</div>
@@ -313,6 +313,8 @@ $initial = null;
 		set('f-p1',    kwhW(Math.abs(d.flow.p1)) + ' W');
 		const pl = document.getElementById('f-p1label');
 		if (d.flow.p1 <= -25) { pl.textContent = 'export'; pl.style.color = '#5DCAA5'; }
+		else if (d.flow.p1 > -25 && d.flow.p1 < 0) { pl.textContent = 'balans (-)'; pl.style.color = '#5DCAA5'; }
+		else if (d.flow.p1 > 0 && d.flow.p1 < 25) { pl.textContent = 'balans (+)'; pl.style.color = '#F09595'; }
 		else if (d.flow.p1 >= 25) { pl.textContent = 'import'; pl.style.color = '#F09595'; }
 		else { pl.textContent = 'balans'; pl.style.color = '#8B97A5'; }
 		set('f-accu', kwhW(d.flow.accu.power) + ' W');
