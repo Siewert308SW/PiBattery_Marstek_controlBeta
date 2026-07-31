@@ -17,8 +17,7 @@
 			$faseProtect ||
 			$hwInvReturn < 0 ||
 			isset($vars['battery_awaitingCalibration']) ||
-			$battery_calibrated || 
-			$chargeLossCalculation ||
+			$battery_calibrated ||
 			$charged
 		)
 	) {
@@ -31,8 +30,7 @@
 		!$faseProtect &&
 		$hwInvReturn == 0 &&
 		!isset($vars['battery_awaitingCalibration']) &&
-		!$battery_calibrated && 
-		!$chargeLossCalculation &&
+		!$battery_calibrated &&
 		!$charged
 	) {
 		$keepChargersOff = false;
@@ -41,10 +39,54 @@
 	}
 
 // = -------------------------------------------------
-// = Determine available PV surplus
+// = Determine available PV surplus && $hwSolarReturn < -3500  - $chargerhyst
 // = -------------------------------------------------
 	$grossAvailableSolarPower = 0;
-	$grossAvailableSolarPower = max(0, -$P1ChargerUsage - $chargerhyst);
+	$availablePibatterySolarPower = 0;
+	$availableMarstekSolarPower = 0;
+
+	if ($hwChargerTwoStatus == 'On' || $hwChargerFourStatus == 'On') {
+		$grossAvailableSolarPower = max(0, -$P1ChargerUsage + $chargerhyst);
+	} else {
+		$grossAvailableSolarPower = max(0, -$P1ChargerUsage);
+	}	
+
+// Split available surplus
+	if ($sunScore >= 85) {
+		if (!$pauseCharging && !$pauseMarstekCharging && !$keepChargersOff) {
+			$nettoAvailableSolarPower     = ($grossAvailableSolarPower / 2);
+			$availableMarstekSolarPower   = floor($nettoAvailableSolarPower - $chargerSplitBuffer);
+			$availablePibatterySolarPower = floor($nettoAvailableSolarPower + $chargerSplitBuffer);
+		} else {
+			if ($pauseCharging && !$pauseMarstekCharging) {
+				$availableMarstekSolarPower   = $grossAvailableSolarPower;
+				$availablePibatterySolarPower = 0;
+			} elseif (!$pauseCharging && $pauseMarstekCharging) {
+				$availableMarstekSolarPower   = 0;
+				$availablePibatterySolarPower = floor($grossAvailableSolarPower);
+			} elseif (!$pauseMarstekCharging && !$pauseCharging) {
+				$availableMarstekSolarPower   = $grossAvailableSolarPower;
+				$availablePibatterySolarPower = 0;
+			} else {
+				$availableMarstekSolarPower   = 0;
+				$availablePibatterySolarPower = 0;
+			}
+		}
+	} else {
+			if ($pauseCharging && !$pauseMarstekCharging) {
+				$availableMarstekSolarPower   = ($grossAvailableSolarPower - $marstekChargerStep);
+				$availablePibatterySolarPower = 0;
+			} elseif (!$pauseCharging && $pauseMarstekCharging) {
+				$availableMarstekSolarPower   = 0;
+				$availablePibatterySolarPower = floor($grossAvailableSolarPower);
+			} elseif (!$pauseMarstekCharging && !$pauseCharging) {
+				$availableMarstekSolarPower   = ($grossAvailableSolarPower - $marstekChargerStep);
+				$availablePibatterySolarPower = 0;
+			} else {
+				$availableMarstekSolarPower   = 0;
+				$availablePibatterySolarPower = 0;
+			}
+	}
 	
 // = -------------------------------------------------
 // = Marstek dynamic charger
@@ -53,8 +95,8 @@
 	$keepMarstekOff = ($faseProtect || $hwInvReturn < 0 || $bmsWakeActive || $pauseMarstekCharging || $hwMarstekStatus == 'Off');
 	
 	if (!$keepMarstekOff) {
-		if ($grossAvailableSolarPower >= ($marstekChargerMin)) {
-			$rounded = floor($grossAvailableSolarPower / $marstekChargerStep) * $marstekChargerStep;
+		if ($availableMarstekSolarPower >= ($marstekChargerMin + $marstekChargerStep)) {
+			$rounded = floor($availableMarstekSolarPower/ $marstekChargerStep) * $marstekChargerStep;
 			$marstekChargerTarget = min($marstekChargerMax, max($marstekChargerMin, $rounded));
 		}
 	}
@@ -66,20 +108,13 @@
 			setMarstekUsage($marstekChargerTarget);
 		}
 	}
-
-// === Marstek fully charged? then give remaining surplus to piBattery
-	if ($pauseMarstekCharging) {		
-	$availableSolarPower = floor($grossAvailableSolarPower);
-	} else {		
-	$availableSolarPower = 0;
-	}
-
+	
 // = -------------------------------------------------
 // = Get chargers total usage
 // = -------------------------------------------------
 	$currentTotal = 0;
 	foreach ($chargers as $name => &$data) {
-		$data['status'] = getHwStatus($data['ip']);
+		$data['status'] = getHwAll($data['ip'])['status'];
 		if ($data['status'] === 'On') {
 			$currentTotal += $data['power'];
 		}
@@ -150,7 +185,7 @@
 		}
 
 		// All chargers which fits within Solar Surplus
-		if ($totalChargerUsage <= $availableSolarPower) {
+		if ($totalChargerUsage <= $availablePibatterySolarPower) {
 			$validCombinations[] = [
 				'names' => $combi,
 				'total' => $totalChargerUsage
@@ -168,29 +203,6 @@
 	$bestCombi = $validCombinations[0]['names'] ?? [];
 	$bestTotal = $validCombinations[0]['total'] ?? 0;
 
-// = -------------------------------------------------
-// = Determin is current bestCombi is still within surplus
-// = -------------------------------------------------
-	$currentCombi = [];
-	foreach ($chargers as $name => $data) {
-		if ($data['status'] === 'On') {
-			$currentCombi[] = $name;
-		}
-	}
-	$currentCombiTotal = array_sum(array_map(fn($n) => $chargers[$n]['power'], $currentCombi));
-	$grossAvailableWithoutHyst = max(0, -$P1ChargerUsage);
-
-	if (!empty($currentCombi) && in_array($masterName, $currentCombi) && $currentCombiTotal <= $grossAvailableWithoutHyst && $bestTotal < $currentCombiTotal) {
-		$bestCombi = $currentCombi;
-		$bestTotal = $currentCombiTotal;
-	}
-	
-	if ($debug == 'yes' && $isManualRun && !$bmsWakeActive) {
-		if (!empty($bestCombi) && !$keepChargersOff) {
-			debugMsg("Beste lader combinatie - " . implode(', ', $bestCombi) . "");
-		}
-	}
-
 // = -------------------------------------------------	
 // = Check if toggling chargers is upscale or downscale
 // = -------------------------------------------------
@@ -198,10 +210,14 @@
 	$isDownscaling 		= ($bestTotal < $currentTotal);
 	$currentPendingType = null;
 
-	if ($isUpscaling && $hwChargerUsage == 0) {
+	if ($isUpscaling) {
 		$currentPendingType = 'upscale';
+
+		if ($currentTotal == 0) {
+		$chargerPause = 90;			
+		}
 		
-	} elseif ($isDownscaling && $hwP1Usage < $currentTotal) {
+	} elseif ($isDownscaling && $hwP1Usage > 0 && $hwP1Usage < 1600) {
 		$currentPendingType = 'downscale';
 	}
 	
