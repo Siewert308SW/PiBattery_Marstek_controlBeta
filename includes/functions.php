@@ -314,9 +314,9 @@
 // = Function GET Domoticz device power
 // = -------------------------------------------------
 	function getDomoticzDevicePower($idx) {
-		global $domoticzIP;
+		global $domoticzRemoteIP;
 		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, "http://192.168.178.7:8080/json.htm?type=command&param=getdevices&rid=".$idx);
+		curl_setopt($ch, CURLOPT_URL, 'http://'.$domoticzRemoteIP.'/json.htm?type=command&param=getdevices&rid='.$idx);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		$result = curl_exec($ch);
 
@@ -335,40 +335,22 @@
 // = -------------------------------------------------
 // = Function Update Domoticz Device
 // = -------------------------------------------------
+	function UpdateDomoticzDevice($idx, $cmd) {
+		global $domoticzIP;
+		global $domoticzIDX;
 
-	function UpdateDomoticzDevice($idx,$cmd) {
-	  global $domoticzIP;
-	  global $batterySOCIDX;
-	  global $marstekSOCIDX;
-	  global $batteryVoltageIDX;
-	  global $batteryAvailIDX;
-	  global $marstekAvailIDX;
-	  global $batteryChargeTimeIDX;
-	  global $batteryDischargeTimeIDX;
-	  global $marstekChargeTimeIDX;
-	  global $marstekDischargeTimeIDX;
-	  global $inputCounterIDX;
-	  global $outputCounterIDX;
-	  global $marstekInputCounterIDX;
-	  global $marstekOutputCounterIDX;
-	  global $pvCounterIDX;
-	  global $ecoFlowTempIDX;
-	  global $marstekTempIDX;
-	  global $batteryRTEIDX;
-	  global $marstekRTEIDX;
-	  
-	  $reply = ['status' => 'ERROR'];
-	  
-	  if ($idx == $marstekInputCounterIDX || $idx == $marstekOutputCounterIDX || $idx == $inputCounterIDX || $idx == $outputCounterIDX || $idx == $batterySOCIDX || $idx == $marstekSOCIDX || $idx == $batteryVoltageIDX || $idx == $pvCounterIDX || $idx == $ecoFlowTempIDX || $idx == $marstekTempIDX || $idx == $batteryRTEIDX || $idx == $marstekRTEIDX){
-	  $reply=json_decode(file_get_contents('http://'.$domoticzIP.'/json.htm?type=command&param=udevice&idx='.$idx.'&nvalue=0&svalue='.$cmd.';0'),true);
-	  }
-	  
-	  if ($idx == $marstekChargeTimeIDX || $idx == $marstekDischargeTimeIDX || $idx == $batteryChargeTimeIDX || $idx == $batteryDischargeTimeIDX || $idx == $batteryAvailIDX || $idx == $marstekAvailIDX){
-	  $reply=json_decode(file_get_contents('http://'.$domoticzIP.'/json.htm?type=command&param=udevice&idx='.$idx.'&nvalue=0&svalue='.$cmd.''),true);
-	  }
-	  
-	  if (($reply['status'] ?? '') == 'OK') $reply='OK'; else $reply='ERROR';
-	  return $reply;
+		$entry = null;
+		foreach ($domoticzIDX as $item) {
+			if ($item[0] === $idx) { $entry = $item; break; }
+		}
+
+		if ($entry === null) return 'ERROR';
+
+		$svalue = ($entry[1] === 'udevice') ? $cmd.';0' : $cmd;
+		$reply  = json_decode(file_get_contents('http://'.$domoticzIP.'/json.htm?type=command&param=udevice&idx='.$idx.'&nvalue=0&svalue='.$svalue), true);
+
+		if (($reply['status'] ?? '') == 'OK') return 'OK';
+		return 'ERROR';
 	}
 
 // = -------------------------------------------------
@@ -403,7 +385,7 @@
 // = Send PiBattery/Marstek battery status to Domoticz
 // = -------------------------------------------------
 	function sendBatteryStatusToDomoticz() {
-		$domoticzUrl   = 'http://192.168.178.7:8080';
+		global $domoticzRemoteIP;
 		global $batteryPct;
 		global $marstekSoc;
 		global $marstekMaxOutput;
@@ -425,11 +407,11 @@
 		$totalMarstekPct = round(($marstekSoc), 0);
 		
 // === Calculate total injection		
-		if ($marstekSoc >= $batteryMinimum) {
+		if ($marstekSoc >= ($batteryMinimum * 2)) {
 			$totalDischargeMarstek = $marstekMaxOutput;
 		}
 
-		if ($batteryPct >= $batteryMinimum) {
+		if ($batteryPct >= ($batteryMinimum * 2)) {
 			$totalDischargePiBattery = $ecoflowOneMaxOutput + $ecoflowTwoMaxOutput;
 		}
 
@@ -445,7 +427,7 @@
 		}
 
 
-		if ($pauseCharging && $pauseMarstekCharging && !$chargeLossCalculation && !$battery_awaitingCalibration) {
+		if ($pauseCharging && $pauseMarstekCharging && !$battery_awaitingCalibration) {
 			$bothCharged = 1;
 		} else {
 			$bothCharged = 0;
@@ -474,8 +456,8 @@
 			],
 		];
 
-		foreach ($updates as $update) {
-			$url = $domoticzUrl . '/json.htm?type=command&param=updateuservariable'
+			foreach ($updates as $update) {
+			$url = 'http://'.$domoticzRemoteIP.'/json.htm?type=command&param=updateuservariable'
 				. '&vname=' . rawurlencode($update['name'])
 				. '&vtype=' . $update['type']
 				. '&vvalue=' . rawurlencode($update['value']);
