@@ -27,10 +27,16 @@
 // = -------------------------------------------------
 
 	if ($hwP1Usage < $activeMaxOutput){
-		if ($hwSolarReturn == 0) {
+		if ($hwSolarReturn >= -1000) {
 		$newBaseloadRef = round(min($activeMaxOutput, max(0, ($hwP1Usage + $currentBaseload + $baseloadBuffer))) * 10);
 		} else {
-		$newBaseloadRef = round(min($activeMaxOutput, max(0, ($hwP1Usage + $currentBaseload + ($baseloadBuffer * 10)))) * 10);
+		
+		//	if ($realUsage > 1500){
+		//	$newBaseloadRef = round(min($activeMaxOutput, max(0, ($hwP1Usage + $currentBaseload + ($baseloadBuffer * 15)))) * 10);
+		//	} else {
+			$newBaseloadRef = round(min($activeMaxOutput, max(0, ($hwP1Usage + $currentBaseload + 50))) * 10);
+		//	}
+				
 		}
 	} elseif ($hwP1Usage >= $activeMaxOutput){
 		$newBaseloadRef = round($activeMaxOutput * 10);
@@ -42,10 +48,6 @@
 // = Fluctuation damping: follow directly, average only when restless
 // = -------------------------------------------------
 if($hwChargerUsage < 11 && $hwInvsReturn < 0){
-	$baseloadSwingOffset  = 175;										 // Change (W) bigger than this counts as a big swing
-	$baseloadFluctWindow  = 90;											 // Window (s) to look for repeating reversals
-	$baseloadFluctTrigger = 4;											 // Reversals within the window before averaging starts
-	$baseloadAvgRuns      = 4;											 // Runs to average over while damping
 
 	$baseloadLastRef      = $vars['baseloadLastRef']     ?? $baseloadRawRef;
 	$baseloadLastBigSign  = $vars['baseloadLastBigSign'] ?? 0;
@@ -279,7 +281,7 @@ if($hwChargerUsage < 11 && $hwInvsReturn < 0){
 	}
 
 // === Set baseload to null when battery calibration is still running
-	if (isset($vars['charge_loss_calculation']) || isset($vars['battery_awaitingCalibration']) || $batteryPct > 100.00) {
+	if (isset($vars['battery_awaitingCalibration']) || $batteryPct > 100.00) {
 		$forceBaseloadNull 	  = true;
 		$baseloadIdleOverride = true;
 		
