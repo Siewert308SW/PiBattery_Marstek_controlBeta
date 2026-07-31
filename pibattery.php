@@ -56,7 +56,7 @@
 	if (!$isManualRun) {
 		$lockFile = $piBatteryPath . 'data/pibattery.lock';
 		if (file_exists($lockFile)) {
-			if ((time() - filemtime($lockFile)) < 10) {
+			if ((time() - filemtime($lockFile)) <= 10) {
 				exit;
 			}
 		}
@@ -69,46 +69,52 @@
 	
 // = Determine if Charger script may execute
 	if(!$isManualRun) {
-		if (!isset($scriptTimer['lastChargerRun']) || ($timeStamp - $scriptTimer['lastChargerRun']) >= 29) {
+		if (!isset($scriptTimer['lastChargerRun']) || ($timeStamp - $scriptTimer['lastChargerRun']) >= 14) {
 			$runCharger = true;
-			$runBootstrap = true;
+			//$runBootstrap = true;
 		}
 
 	// = Determine if Baseload script may be executed
-		if (!isset($scriptTimer['lastBaseloadRun']) || ($timeStamp - $scriptTimer['lastBaseloadRun']) >= 9) {
-			$runBaseload = true;
-			$runBootstrap = true;
-		}
+		//if (!isset($scriptTimer['lastBaseloadRun']) || ($timeStamp - $scriptTimer['lastBaseloadRun']) >= 9) {
+		//	$runBaseload = true;
+		//	$runBootstrap = true;
+		//}
 	}
 	
 // = -------------------------------------------------
 // = Script may be executed
 // = -------------------------------------------------
 	
-	if ($runBootstrap == true || $isManualRun) {
-		require_once $bootStrapFile;
-	}
+	//if ($runBootstrap == true || $isManualRun) {
+	//	require_once $bootStrapFile;
+	//}
 	
 // = Baseload script may be executed	
-	if ($runBaseload == true || $isManualRun) {
-		$scriptTimer['lastBaseloadRun'] = $timeStamp;
-		writePiJson($varsTimerFile, $scriptTimer);
-		require_once $piBatteryPath . 'scripts/baseload.php';
-	}
+	//if ($runBaseload == true || $isManualRun) {
+	//	$scriptTimer['lastBaseloadRun'] = $timeStamp;
+	//	writePiJson($varsTimerFile, $scriptTimer);
+	//	require_once $piBatteryPath . 'scripts/baseload.php';
+	//}
 
 // = Charger script may execute
 	if ($runCharger == true || $isManualRun) {
 		$scriptTimer['lastChargerRun'] = $timeStamp;
 		writePiJson($varsTimerFile, $scriptTimer);
+		require_once $bootStrapFile;
+		usleep(100000);				
+		require_once $piBatteryPath . 'scripts/baseload.php';
+		usleep(100000);
 		require_once $piBatteryPath . 'scripts/charge.php';
+		usleep(100000);
+		require_once $piBatteryPath . 'scripts/display.php';
 	}
 
 // = -------------------------------------------------
 // = Dashboard API snapshot
 // = -------------------------------------------------
-	if ($runBaseload && !$isManualRun) {
-		require_once $piBatteryPath . 'scripts/display.php';
-	}
+	//if ($runBaseload && !$isManualRun) {
+	//	require_once $piBatteryPath . 'scripts/display.php';
+	//}
 	
 // = -------------------------------------------------
 // = Debug Output
@@ -145,7 +151,7 @@
 		printRow('Batterij RTE',  round($marstekRTE, 1), '%');
 		printRow('Batterij Temperatuur', $marstekTemp, '°C');
 		
-		if ($hwMarstekSocket > 9 && $marstekSoc < 100) {
+		if ($hwMarstekSocket > 11 && $marstekSoc < 100) {
 			printRow('Geschatte oplaadtijd '.round($marstekSoc,0).'% > 100%', $realMarstekChargeTime, 'u/m');
 		}
 		
@@ -173,6 +179,20 @@
 		printRow('Laders verbruik', $hwChargerUsage, 'Watt');
 		echo ' '.PHP_EOL;
 
+// === Print Surplus/P1 Available
+		echo ' -/- Overschot                       -\-'.PHP_EOL;
+		printRow('Overschot totaal', $grossAvailableSolarPower, 'Watt');
+		printRow('Overschot -> piBattery', $availablePibatterySolarPower, 'Watt');
+		printRow('Overschot benut piBattery', $hwChargersUsage, 'Watt');
+		printRow('Overschot -> Marstek', $availableMarstekSolarPower, 'Watt');
+		printRow('Overschot benut Marstek', $hwMarstekUsage, 'Watt');
+		//printRow('Marstek target', $marstekChargerTarget, 'Watt');
+		//printRow('Marstek werkelijk', $hwMarstekUsage, 'Watt');
+		//printRow('Marstek delta', $marstekDelta, 'Watt');
+		//printRow('Resterend t.b.v piBattery', $availableSolarPower, 'Watt');
+		//printRow('Resterend zonder hyst', $grossAvailableWithoutHyst, 'Watt');
+		echo ' '.PHP_EOL;
+		
 // === Print Baseload
 		echo ' -/- Baseload                        -\-'.PHP_EOL;
 		printRow('Ingestelde baseload', $currentBaseload, 'Watt');
