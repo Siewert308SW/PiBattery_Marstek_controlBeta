@@ -6,6 +6,54 @@
 // **************************************************************//
 //															     //
 
+// = -------------------------------------------------
+// = API / Modbus beschikbaarheid check
+// = -------------------------------------------------
+
+	//if (!$isManualRun) {
+// = Validate EcoFlow API response
+	//	if (!isset($invOne['data']) || !isset($invTwo['data'])) {
+	//		if (($vars['EcoFlow_API_Offline'] ?? false) !== true) {
+	//			$vars['EcoFlow_API_Offline'] = true;
+	//			$varsChanged = true;
+	//		}
+			//debugMsg('EcoFlow API niet beschikbaar, script gestopt');
+			//if (file_exists($lockFile)) unlink($lockFile);
+			//exit;
+	//	} elseif (isset($vars['EcoFlow_API_Offline'])) {
+			//unset($vars['EcoFlow_API_Offline']);
+			//$varsChanged = true;
+	//	}
+	//}
+/*
+	if (!$isManualRun) {
+			$EcoflowOnline = false;
+			$MarstekOnline = false;
+		if (!isset($invOne['data']) || !isset($invTwo['data'])) {
+			debugMsg('EcoFlow API niet beschikbaar, systeem geblokkeerd');
+			//switchHwSocket('invOne', 'Off');
+			//switchHwSocket('invTwo', 'Off');
+			//switchHwSocket('one', 'Off');
+			//switchHwSocket('two', 'Off');
+			//switchHwSocket('three', 'Off');
+			//switchHwSocket('four', 'Off');
+			//unlink($lockFile);
+			//exit;
+			$EcoflowOnline = true;
+		}
+
+		if (!$marstekData['online']) {
+			debugMsg('Marstek Modbus niet beschikbaar, systeem geblokkeerd');
+			//switchHwSocket('four', 'Off');
+			//switchHwSocket('three', 'Off');
+			//switchHwSocket('two', 'Off');
+			//switchHwSocket('one', 'Off');
+			//unlink($lockFile);
+			//exit;
+			$MarstekOnline = true;
+		}
+	}
+*/
 
 // = -------------------------------------------------	
 // = API / Modbus Errors
@@ -45,12 +93,11 @@
 			switchHwSocket('one','Off');
 		}
 
-		if ((($vars['pauseMarstekCharging'] ?? true) !== false) && $marstekSoc <= 95) {
+		if ((($vars['pauseMarstekCharging'] ?? true) !== false) && $marstekSoc <= 99) {
 			$vars['pauseMarstekCharging'] = false;
 			$vars['marstek_force_mode'] = '';
 		}
-	
-		return;	
+		
 	}
 
 // === End pause
@@ -73,7 +120,7 @@
 		if ((($vars['pauseCharging'] ?? true) !== false) && $batteryPct <= 95) {
 			$vars['pauseCharging'] = false;
 		}
-		return;	
+
 	}
 	
 // === End pause
@@ -88,6 +135,111 @@
 // = -------------------------------------------------	
 // = Batt% variable calibration
 // = -------------------------------------------------
+	if ($runCharger && !$isManualRun){
+		if ($pvAvInputVoltage >= $batteryVoltMax && $pauseCharging && !$isManualRun
+			&& !isset($vars['battery_calibrated'])
+			&& $hwChargerOneStatus == 'Off' && $hwChargerTwoStatus == 'Off' && $hwChargerThreeStatus == 'Off' && $hwChargerFourStatus == 'Off') {
+
+			$chargeStart  		= round($hwChargersTotalInput, 7);
+			$chargeCalibrated	= round($hwChargersTotalInput - $batteryCapacitykWh, 7);
+			$dischargeStart 	= round($hwInvTotal, 7);
+
+			$chargedkWh    = $brutoCharged;
+			$dischargedkWh = $brutoDischarged;
+
+	// = Start Charge Loss Calculation
+			if ($chargedkWh > 0 && $dischargedkWh > 0 && $dischargedkWh <= $chargedkWh) {
+				$sessionLoss = 1 - ($dischargedkWh / $chargedkWh);
+
+	// === Log session only if new
+			$sessionFile = $piBatteryPath . 'data/charge_sessions.json';
+			$newSession = [
+			'charged'     		 => round($chargedkWh, 7),
+			'discharged'     	 => round($dischargedkWh, 7),
+			'loss'        		 => round($sessionLoss, 7)
+			];
+
+			$sessions = [];
+			$skipSession = false;
+
+			if (file_exists($sessionFile)) {
+				$sessions = json_decode(file_get_contents($sessionFile), true);
+				if (!is_array($sessions)) $sessions = [];
+
+	// === Check id session is identical to the latest session
+				$lastSession = end($sessions);
+				if (
+					isset($lastSession['charged'], $lastSession['discharged']) &&
+					$newSession['charged'] === $lastSession['charged'] &&
+					$newSession['discharged'] === $lastSession['discharged']
+					) {
+					$skipSession = true;
+					}
+				}
+
+				if (!$skipSession) {
+					$sessions[] = $newSession;
+
+	// === Remove oldest session				
+			if (count($sessions) > $chargeSessions) {
+			array_shift($sessions);
+			}	
+			writeJsonLocked($sessionFile, $sessions);
+			}
+
+	// === Calculate session average
+			$losses = [];
+			foreach ($sessions as $s) {
+				if (isset($s['charged'], $s['discharged']) &&
+					$s['charged'] > 0 &&
+					$s['discharged'] > 0 &&
+					$s['charged'] >= $s['discharged']
+					) {
+					$loss = 1 - ($s['discharged'] / $s['charged']);
+					$losses[] = $loss;
+				}
+			}
+
+			if (count($losses) >= $chargeSessions) {
+				$chargerLoss = array_sum($losses) / count($losses);
+				if ($chargerLoss != $vars['charger_loss_dynamic']) {
+				$varsChanged = true;
+				$vars['charger_loss_dynamic'] = $chargerLoss;
+				}
+			}
+
+				if (isset($vars['battery_empty'])) {
+					unset($vars['battery_empty']);
+					$varsChanged = true;
+				}
+			}
+
+	// = End Charge Loss calculation
+			$varsChanged = true;
+			$vars['charge_session'] = [
+				'chargeStart'     => $chargeStart,
+				'chargeCalibrated'=> $chargeCalibrated,
+				'dischargeStart'  => $dischargeStart
+			];
+
+			$vars['battery_calibrated'] = true;
+			unset($vars['battery_awaitingCalibration']);
+			$varsChanged = true;
+		}
+
+		if ($pvAvInputVoltage < $batteryVoltMax) {
+			if (isset($vars['battery_calibrated'])) {
+				unset($vars['battery_calibrated']);
+				$varsChanged = true;
+			}
+			//if (isset($vars['battery_awaitingCalibration'])) {
+			//	unset($vars['battery_awaitingCalibration']);
+			//	$varsChanged = true;
+			//}
+		}
+	}
+	
+/*
 	if ($runCharger && !$isManualRun){
 		if ($pvAvInputVoltage >= $batteryVoltMax && $pauseCharging && !isset($vars['battery_awaitingCalibration']) && !$isManualRun && !isset($vars['battery_calibrated'])) {
 				$varsChanged = true;
@@ -210,6 +362,8 @@
 			$varsChanged = true;
 		}
 	}
+*/
+	
 // = -------------------------------------------------
 // = Fase Protection
 // = -------------------------------------------------
@@ -310,83 +464,141 @@
 			$realMarstekDischargeTime = convertTime($dischargeMarstekTime);
 		}
 
+// = -------------------------------------------------
+// = Sun Score vandaag
+// = -------------------------------------------------
+	if ($isManualRun){	
+
+// === Zet sunScoree bij eerste opwek
+		if ($hwSolarReturn < 0) {
+			$sunScoreeUrl = "https://api.open-meteo.com/v1/forecast"
+				. "?latitude=" . $latitude
+				. "&longitude=" . $longitude
+				. "&daily=sunshine_duration,shortwave_radiation_sum,cloudcover_mean"
+				. "&forecast_days=1"
+				. "&timezone=" . $timezone;
+
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $sunScoreeUrl);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+			$sunScoreeResponse = curl_exec($ch);
+			curl_close($ch);
+
+			if ($sunScoreeResponse) {
+				$sunScoreeData = json_decode($sunScoreeResponse, true);
+
+				$sunshine_sec = $sunScoreeData['daily']['sunshine_duration'][0] ?? null;
+				$cloud_mean   = $sunScoreeData['daily']['cloudcover_mean'][0]   ?? null;
+
+				if ($sunshine_sec !== null) {
+					$sunshine_min = floor(($sunshine_sec / 60) + 0.5);
+					$scoreSun     = max(0, min(60, floor(($sunshine_min / 600) * 60 + 0.5)));
+					$scoreCloud   = ($cloud_mean !== null) ? max(0, min(40, floor((100 - $cloud_mean) * 0.4 + 0.5))) : 20;
+					$sunScoree = min(100, $scoreSun + $scoreCloud);
+					//$varsChanged = true;
+					debugMsg('Zon Score: '.$scoreSun.'%');
+					debugMsg('Wolken Score: '.$scoreCloud.'%');					
+					debugMsg('Zon Score Vandaag: '.$sunScoree.'%');
+				}
+			}
+		}
+
+
+	}
+	
+// = -------------------------------------------------
+// = Sun Score vandaag
+// = -------------------------------------------------
+	if ($runCharger && !$isManualRun){	
+
+// === Zet sunScore bij eerste opwek
+		if ($hwSolarReturn < 0 && !isset($vars['sunScore'])) {
+			$sunScoreUrl = "https://api.open-meteo.com/v1/forecast"
+				. "?latitude=" . $latitude
+				. "&longitude=" . $longitude
+				. "&daily=sunshine_duration,shortwave_radiation_sum,cloudcover_mean"
+				. "&forecast_days=1"
+				. "&timezone=" . $timezone;
+
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $sunScoreUrl);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+			$sunScoreResponse = curl_exec($ch);
+			curl_close($ch);
+
+			if ($sunScoreResponse) {
+				$sunScoreData = json_decode($sunScoreResponse, true);
+
+				$sunshine_sec = $sunScoreData['daily']['sunshine_duration'][0] ?? null;
+				$cloud_mean   = $sunScoreData['daily']['cloudcover_mean'][0]   ?? null;
+
+				if ($sunshine_sec !== null) {
+					$sunshine_min = floor(($sunshine_sec / 60) + 0.5);
+					$scoreSun     = max(0, min(60, floor(($sunshine_min / 600) * 60 + 0.5)));
+					$scoreCloud   = ($cloud_mean !== null) ? max(0, min(40, floor((100 - $cloud_mean) * 0.4 + 0.5))) : 20;
+					$vars['sunScore'] = min(100, $scoreSun + $scoreCloud);
+					$varsChanged = true;
+				}
+			}
+		}
+
+// === Verwijder sunScore bij zonsondergang
+		if ($hwSolarReturn == 0 && isset($vars['sunScore'])) {
+			unset($vars['sunScore']);
+			$varsChanged = true;
+		}
+	}
+	
 // = -------------------------------------------------	
 // = PushUpdate to Domoticz
 // = -------------------------------------------------
-	if ($runBaseload && !$isManualRun){
+	if ($runCharger && !$isManualRun){
 		
-		if (UpdateDomoticzDeviceIfChanged($batterySOCIDX, ''.$batteryPct.'') == 'OK') usleep(100000);
-
-		if (UpdateDomoticzDeviceIfChanged($marstekSOCIDX, ''.$marstekSoc.'') == 'OK') usleep(100000);
-
-		if (UpdateDomoticzDeviceIfChanged($marstekAvailIDX, ''.$marstekAvailable.'') == 'OK') usleep(100000);
-		
-		if (UpdateDomoticzDeviceIfChanged($batteryAvailIDX, ''.$batteryAvailable.'') == 'OK') usleep(100000);
-
-		if (UpdateDomoticzDeviceIfChanged($batteryVoltageIDX, ''.$pvAvInputVoltage.'') == 'OK') usleep(100000);
-
-		if (UpdateDomoticzDeviceIfChanged($inputCounterIDX, ''.$hwChargersUsage.'') == 'OK') usleep(100000);
-
-		if (UpdateDomoticzDeviceIfChanged($outputCounterIDX, ''.$hwInvsReturn.'') == 'OK') usleep(100000);
-
-		if (UpdateDomoticzDeviceIfChanged($marstekInputCounterIDX, ''.$hwMarstekUsage.'') == 'OK') usleep(100000);
-
-		if (UpdateDomoticzDeviceIfChanged($marstekOutputCounterIDX, ''.$hwMarstekReturn.'') == 'OK') usleep(100000);
-
-// = -------------------------------------------------	
+		if (UpdateDomoticzDeviceIfChanged($domoticzIDX['batterySOC'][0],            ''.$batteryPct.'') == 'OK') usleep(100000);
+		if (UpdateDomoticzDeviceIfChanged($domoticzIDX['marstekSOC'][0],            ''.$marstekSoc.'') == 'OK') usleep(100000);
+		if (UpdateDomoticzDeviceIfChanged($domoticzIDX['marstekAvail'][0],          ''.$marstekAvailable.'') == 'OK') usleep(100000);
+		if (UpdateDomoticzDeviceIfChanged($domoticzIDX['batteryAvail'][0],          ''.$batteryAvailable.'') == 'OK') usleep(100000);
+		if (UpdateDomoticzDeviceIfChanged($domoticzIDX['batteryVoltage'][0],        ''.$pvAvInputVoltage.'') == 'OK') usleep(100000);
+		if (UpdateDomoticzDeviceIfChanged($domoticzIDX['inputCounter'][0],          ''.$hwChargersUsage.'') == 'OK') usleep(100000);
+		if (UpdateDomoticzDeviceIfChanged($domoticzIDX['outputCounter'][0],         ''.$hwInvsReturn.'') == 'OK') usleep(100000);
+		if (UpdateDomoticzDeviceIfChanged($domoticzIDX['marstekInputCounter'][0],   ''.$hwMarstekUsage.'') == 'OK') usleep(100000);
+		if (UpdateDomoticzDeviceIfChanged($domoticzIDX['marstekOutputCounter'][0],  ''.$hwMarstekReturn.'') == 'OK') usleep(100000);
 
 		if ($hwChargersUsage > 10 && $batteryPct < 100) {
-			if (UpdateDomoticzDeviceIfChanged($batteryChargeTimeIDX, ''.$realChargeTime.'') == 'OK') usleep(100000);
+			if (UpdateDomoticzDeviceIfChanged($domoticzIDX['batteryChargeTime'][0], ''.$realChargeTime.'') == 'OK') usleep(100000);
 		} else {
-			if (UpdateDomoticzDeviceIfChanged($batteryChargeTimeIDX, '00:00') == 'OK') usleep(100000);
+			if (UpdateDomoticzDeviceIfChanged($domoticzIDX['batteryChargeTime'][0], '00:00') == 'OK') usleep(100000);
 		}
-
-// = -------------------------------------------------	
 
 		if ($hwInvsReturn < 0 && $batteryPct > $batteryMinimum) {
-			if (UpdateDomoticzDeviceIfChanged($batteryDischargeTimeIDX, ''.$realDischargeTime.'') == 'OK') usleep(100000);
+			if (UpdateDomoticzDeviceIfChanged($domoticzIDX['batteryDischargeTime'][0],''.$realDischargeTime.'') == 'OK') usleep(100000);
 		} else {
-			if (UpdateDomoticzDeviceIfChanged($batteryDischargeTimeIDX, '00:00') == 'OK') usleep(100000);
+			if (UpdateDomoticzDeviceIfChanged($domoticzIDX['batteryDischargeTime'][0],'00:00') == 'OK') usleep(100000);
 		}
-
-// = -------------------------------------------------	
 
 		if ($hwMarstekUsage > 10 && $marstekSoc < 100) {
-			if (UpdateDomoticzDeviceIfChanged($marstekChargeTimeIDX, ''.$realMarstekChargeTime.'') == 'OK') usleep(100000);
+			if (UpdateDomoticzDeviceIfChanged($domoticzIDX['marstekChargeTime'][0], ''.$realMarstekChargeTime.'') == 'OK') usleep(100000);
 		} else {
-			if (UpdateDomoticzDeviceIfChanged($marstekChargeTimeIDX, '00:00') == 'OK') usleep(100000);
+			if (UpdateDomoticzDeviceIfChanged($domoticzIDX['marstekChargeTime'][0], '00:00') == 'OK') usleep(100000);
 		}
-
-// = -------------------------------------------------	
 
 		if ($hwMarstekReturn < 0 && $marstekSoc > $marstekMinimum) {
-			if (UpdateDomoticzDeviceIfChanged($marstekDischargeTimeIDX, ''.$realMarstekDischargeTime.'') == 'OK') usleep(100000);
+			if (UpdateDomoticzDeviceIfChanged($domoticzIDX['marstekDischargeTime'][0],''.$realMarstekDischargeTime.'') == 'OK') usleep(100000);
 		} else {
-			if (UpdateDomoticzDeviceIfChanged($marstekDischargeTimeIDX, '00:00') == 'OK') usleep(100000);
+			if (UpdateDomoticzDeviceIfChanged($domoticzIDX['marstekDischargeTime'][0],'00:00') == 'OK') usleep(100000);
 		}
 
-// = -------------------------------------------------	
-		
-		if (UpdateDomoticzDeviceIfChanged($batteryRTEIDX, ''.$chargerRTE.'') == 'OK') usleep(100000);
-
-// = -------------------------------------------------	
-
-		if (UpdateDomoticzDeviceIfChanged($marstekRTEIDX, ''.$marstekRTE.'') == 'OK') usleep(100000);
-		
-// = -------------------------------------------------	
-		
-		if (UpdateDomoticzDeviceIfChanged($ecoFlowTempIDX, ''.$invTemp.'') == 'OK') usleep(100000);
-
-// = -------------------------------------------------	
-		
-		if (UpdateDomoticzDeviceIfChanged($marstekTempIDX, ''.$marstekTemp.'') == 'OK') usleep(100000);
-		
+		if (UpdateDomoticzDeviceIfChanged($domoticzIDX['batteryRTE'][0],            ''.$chargerRTE.'') == 'OK') usleep(100000);
+		if (UpdateDomoticzDeviceIfChanged($domoticzIDX['marstekRTE'][0],            ''.$marstekRTE.'') == 'OK') usleep(100000);
+		if (UpdateDomoticzDeviceIfChanged($domoticzIDX['ecoFlowTemp'][0],           ''.$invTemp.'') == 'OK') usleep(100000);
+		if (UpdateDomoticzDeviceIfChanged($domoticzIDX['marstekTemp'][0],           ''.$marstekTemp.'') == 'OK') usleep(100000);
 	}
 
 // = -------------------------------------------------	
 // = Push data to Domoticz
 // = -------------------------------------------------
-
 	if ($runCharger && !$isManualRun){	
 		sendBatteryStatusToDomoticz();
 	}
