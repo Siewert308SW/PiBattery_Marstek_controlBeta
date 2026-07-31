@@ -1,22 +1,22 @@
 [
     {
-        "charged": 5.544,
-        "discharged": 4.27,
-        "loss": 0.229798
+        "charged": 3.009,
+        "discharged": 2.157,
+        "loss": 0.2831505
     },
     {
-        "charged": 0.335,
-        "discharged": 0.243,
-        "loss": 0.2746269
+        "charged": 2.996,
+        "discharged": 2.244,
+        "loss": 0.2510013
     },
     {
-        "charged": 0.281,
-        "discharged": 0.203,
-        "loss": 0.2775801
+        "charged": 11.176,
+        "discharged": 8.555,
+        "loss": 0.2345204
     },
     {
-        "charged": 4.623,
-        "discharged": 3.573,
-        "loss": 0.2271252
+        "charged": 3.886,
+        "discharged": 3.007,
+        "loss": 0.2261966
     }
 ]
