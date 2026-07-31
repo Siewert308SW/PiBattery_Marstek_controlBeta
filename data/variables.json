@@ -1,8 +1,8 @@
 {
     "systemFailure": false,
-    "systemFailureIssue": "Inverter Sockets",
-    "pauseCharging": true,
-    "pauseMarstekCharging": true,
+    "systemFailureIssue": "Inverter Sockets OFF",
+    "pauseCharging": false,
+    "pauseMarstekCharging": false,
     "forceChargeMode": false,
     "charger_pending_switch": false,
     "keepChargersOff": true,
@@ -11,28 +11,28 @@
     "invInjection": true,
     "baseloadIdle": false,
     "marstek_force_mode": "discharge",
-    "oldBaseload": 1950,
+    "oldBaseload": 317,
     "baseload_idle_until": 0,
     "charge_session": {
-        "chargeStart": 2886.396,
-        "chargeCalibrated": 2878.716,
-        "dischargeStart": 2309.237
+        "chargeStart": 3039.865,
+        "chargeCalibrated": 3032.185,
+        "dischargeStart": 2426.606
     },
     "charging_loss": {
-        "chargeStart": 2886.396,
-        "dischargeStart": 2309.237
+        "chargeStart": 3035.979,
+        "dischargeStart": 2423.599
     },
-    "charger_loss_dynamic": 0.25228253999811845,
-    "baseloadLastRef": 19500,
-    "baseloadLastBigSign": 1,
-    "baseloadReversals": [
-        1782819862
-    ],
-    "baseloadDampUntil": 1782819382,
+    "charger_loss_dynamic": 0.24871722187958628,
+    "baseloadLastRef": 3170,
+    "baseloadLastBigSign": -1,
+    "baseloadReversals": [],
+    "baseloadDampUntil": 0,
     "baseloadRefHistory": [
-        8010,
-        8460,
-        9030,
-        19500
+        3180,
+        3180,
+        3180,
+        3440,
+        3050,
+        3170
     ]
 }
